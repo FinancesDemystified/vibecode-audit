@@ -14,7 +14,11 @@ RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.json ./
+COPY --from=deps /app/package.json ./package.json
+COPY --from=deps /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=deps /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY --from=deps /app/turbo.json ./turbo.json
+COPY --from=deps /app/tsconfig.json ./tsconfig.json
 COPY packages ./packages
 RUN pnpm --filter @vibecode-audit/shared build && \
     pnpm --filter @vibecode-audit/agents build && \
