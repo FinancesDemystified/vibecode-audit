@@ -14,9 +14,7 @@
     "@vibecode-audit/shared": "workspace:*",
     "bullmq": "^5.0.0",
     "groq-sdk": "^0.3.0",
-    "ioredis": "^5.8.2",
-    "playwright": "^1.40.0",
-    "puppeteer": "^21.6.0"
+    "ioredis": "^5.8.2"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

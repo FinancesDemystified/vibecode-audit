@@ -1,10 +1,9 @@
 /**
- * Report generator (HTML/PDF)
- * Dependencies: puppeteer, @vibecode-audit/shared
- * Purpose: Generate HTML and PDF reports from analysis
+ * Report generator (HTML only)
+ * Dependencies: @vibecode-audit/shared
+ * Purpose: Generate HTML reports from analysis
  */
-import puppeteer from 'puppeteer';
-import type { Report, Analysis, Finding } from '@vibecode-audit/shared';
+import type { Analysis, Finding } from '@vibecode-audit/shared';
 import type { EventBus } from '../communication';
 
 export async function generateReport(
@@ -26,7 +25,7 @@ export async function generateReport(
     agent: 'reporter.generator',
     jobId,
     timestamp: Date.now(),
-    progress: 30,
+    progress: 50,
     message: 'Generating HTML template',
   });
 
@@ -108,33 +107,12 @@ export async function generateReport(
 </html>`;
 
   await eventBus.publish(jobId, {
-    type: 'agent.progress',
-    agent: 'reporter.generator',
-    jobId,
-    timestamp: Date.now(),
-    progress: 70,
-    message: 'Generating PDF',
-  });
-
-  let pdf: Buffer | undefined;
-  try {
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    pdf = await page.pdf({ format: 'A4', printBackground: true });
-    await browser.close();
-  } catch (error) {
-    console.error('PDF generation failed:', error);
-  }
-
-  await eventBus.publish(jobId, {
     type: 'agent.completed',
     agent: 'reporter.generator',
     jobId,
     timestamp: Date.now(),
-    data: { hasPdf: !!pdf },
+    data: { hasHtml: true },
   });
 
-  return { html, pdf };
+  return { html };
 }
-

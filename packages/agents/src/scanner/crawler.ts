@@ -1,9 +1,8 @@
 /**
- * URL crawler using Playwright
- * Dependencies: playwright, @vibecode-audit/shared
+ * URL crawler using native fetch
+ * Dependencies: @vibecode-audit/shared
  * Purpose: Crawl URL and extract HTML, headers, status codes
  */
-import { chromium, type Browser, type Page } from 'playwright';
 import type { AgentEvent } from '@vibecode-audit/shared';
 import type { EventBus } from '../communication';
 
@@ -14,6 +13,42 @@ export interface CrawlResult {
   redirects: string[];
   jsErrors: string[];
   finalUrl: string;
+}
+
+async function fetchWithRedirects(url: string, maxRedirects = 10): Promise<{ response: Response; redirects: string[] }> {
+  const redirects: string[] = [];
+  let currentUrl = url;
+  
+  for (let i = 0; i < maxRedirects; i++) {
+    const response = await fetch(currentUrl, {
+      redirect: 'manual',
+      headers: {
+        'User-Agent': 'VibeCode-Audit/1.0',
+      },
+    });
+
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get('location');
+      if (location) {
+        redirects.push(currentUrl);
+        currentUrl = new URL(location, currentUrl).href;
+        continue;
+      }
+    }
+
+    if (response.status >= 200 && response.status < 300) {
+      const finalResponse = await fetch(currentUrl, {
+        headers: {
+          'User-Agent': 'VibeCode-Audit/1.0',
+        },
+      });
+      return { response: finalResponse, redirects };
+    }
+
+    return { response, redirects };
+  }
+
+  throw new Error('Too many redirects');
 }
 
 export async function crawlUrl(
@@ -28,25 +63,13 @@ export async function crawlUrl(
     timestamp: Date.now(),
   });
 
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  const jsErrors: string[] = [];
-  const redirects: string[] = [];
-
-  page.on('console', (msg) => {
-    if (msg.type() === 'error') {
-      jsErrors.push(msg.text());
-    }
-  });
-
   try {
-    const response = await Promise.race([
-      page.goto(url, { waitUntil: 'networkidle', timeout: 30000 }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout after 30s')), 30000)
-      ),
-    ]) as any;
+    const { response, redirects } = await fetchWithRedirects(url);
+    const html = await response.text();
+    const headers: Record<string, string> = {};
+    response.headers.forEach((value, key) => {
+      headers[key.toLowerCase()] = value;
+    });
 
     await eventBus.publish(jobId, {
       type: 'agent.progress',
@@ -57,35 +80,21 @@ export async function crawlUrl(
       message: 'Page loaded, extracting content',
     });
 
-    const html = await page.content();
-    const headers = response.headers();
-    const statusCode = response.status();
-    const finalUrl = page.url();
-
-    const redirectChain = response.request().redirectedFrom();
-    if (redirectChain) {
-      let current = redirectChain;
-      while (current) {
-        redirects.push(current.url());
-        current = current.redirectedFrom();
-      }
-    }
-
     await eventBus.publish(jobId, {
       type: 'agent.completed',
       agent: 'scanner.crawler',
       jobId,
       timestamp: Date.now(),
-      data: { statusCode, finalUrl },
+      data: { statusCode: response.status, finalUrl: response.url },
     });
 
     return {
       html,
       headers,
-      statusCode,
+      statusCode: response.status,
       redirects,
-      jsErrors,
-      finalUrl,
+      jsErrors: [],
+      finalUrl: response.url,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -106,8 +115,5 @@ export async function crawlUrl(
       jsErrors: [errorMessage],
       finalUrl: url,
     };
-  } finally {
-    await browser.close();
   }
 }
-
