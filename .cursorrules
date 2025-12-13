@@ -1,0 +1,222 @@
+#### Rule: Optimize for minimal token usage in all chat contexts.
+- use first principles 
+    - Break problems into fundamental truths
+    - Question, challenge, dubunk assumptions and conventions
+    - Rebuild solutions from the ground up
+    - Avoid relying on assumptions or existing solutions
+    - Use basic facts that can't be reduced further
+    - Core idea: Start from foundational truths, not assumptions or existing patterns.
+- Always add a concise module docstring with dependencies and purpose when creating new files. 
+- Always prefer concise variable and method names unless clarity suffers.
+- Eliminate boilerplate, redundant comments, and unused imports.
+- Use compact data structures (lists, dicts, sets) over verbose classes.
+- Default to short, clear responses; truncate verbose output.
+- Split large texts into context-efficient segments.
+- When summarizing or compressing data, discard non-essential details.
+- Output formats should use minimal whitespace and compact syntax.
+- README.md is the only markdown file we need, all contenxutal updates should be added here without bloating the file. 
+
+#### Step 1: Project Initialization & Monorepo Setup
+Set up Turborepo for scalability (share lib with web/backend). Enforces consistency from day 1.
+
+```bash
+# Create monorepo
+pnpm create turbo@latest my-app --example basic
+
+# Navigate and init RN app inside (Expo bare for lightness/control)
+cd my-app/apps/mobile
+npx create-expo-app@latest . --template bare-minimum --no-install
+
+# Root-level deps (pnpm workspaces dedupe)
+cd ../..
+pnpm add -D -w typescript eslint prettier @typescript-eslint/eslint-plugin @typescript-eslint/parser eslint-plugin-react eslint-plugin-react-hooks eslint-plugin-react-native husky lint-staged @react-native-community/cli @expo/metro-config
+pnpm add -w react-native-safe-area-context react-native-screens @react-navigation/native @react-navigation/native-stack react-hook-form zod expo-secure-store drizzle-orm @tanstack/react-query trpc/react-native @trpc/client @trpc/server @trpc/react-query
+
+# Enforce consistency: Root .eslintrc.js, .prettierrc, tsconfig.json (extend in apps/mobile)
+cat <<EOL > .eslintrc.js
+module.exports = {
+  root: true,
+  extends: ['@react-native', 'eslint:recommended', 'plugin:@typescript-eslint/recommended', 'prettier'],
+  plugins: ['react', 'react-hooks', 'react-native'],
+  rules: {
+    'react-hooks/exhaustive-deps': 'warn',
+    '@typescript-eslint/consistent-type-imports': 'error',
+    // Consistent patterns: no inline styles, prefer hooks
+  },
+};
+EOL
+
+# Husky pre-commit
+pnpm exec husky init
+echo "pnpm lint-staged" > .husky/pre-commit
+echo '{"*.{js,jsx,ts,tsx,json}": ["eslint --fix", "prettier --write"]}' > .lintstagedrc.json
+
+# Install all
+pnpm install
+```
+
+Seamless Integration: Shared lib/ for types/utils/DB schemas. Cursor Rule: "Extend root configs; use @/* aliases for imports."
+
+#### Step 2: Architecture & Folder Structure
+Feature-sliced for scalability. All files: TypeScript, minimal client code, reusable hooks.
+
+Folder Structure (apps/mobile/src):
+```
+src/
+  app/                # Screens/navigation
+  components/         # UI (shadcn), shared
+  lib/                # Utils, drizzle config, auth
+  hooks/              # useUser, useQuery
+  server/             # tRPC procedures (for backend)
+  types/              # Zod schemas
+drizzle/              # Local migrations (SQLite)
+```
+
+```bash
+# Init shadcn for mobile UI consistency
+pnpm add rn-shadcn  # 2025 mobile port
+pnpm dlx rn-shadcn@latest init
+
+# Add core components
+pnpm dlx rn-shadcn@latest add button card form
+
+# Drizzle setup (local SQLite for offline/scale)
+expo install expo-sqlite
+mkdir drizzle
+echo "import { drizzle } from 'drizzle-orm/expo-sqlite'; import { openDatabaseSync } from 'expo-sqlite/next'; const expoDb = openDatabaseSync('app.db'); export const db = drizzle(expoDb);" > src/lib/db.ts
+pnpm exec drizzle-kit generate:sqlite --out drizzle --schema src/lib/schema.ts
+
+# Auth: Secure store + tRPC
+expo install expo-secure-store
+```
+
+Seamless Integration: tRPC for type-safe API calls to backend (with Redis caching). Security: Zod validates all data.
+
+#### Step 3: Development Loop & Feature Building
+Fast iterations with emulators, focus on efficiency (lazy screens, Hermes).
+
+```bash
+# Start dev (Metro with Turbo)
+pnpm dev --turbo
+
+# Run Android/iOS
+pnpm android  # Or pnpm ios
+
+# Common commands
+pnpm lint     # eslint --fix .
+pnpm type-check  # tsc --noEmit
+pnpm format   # prettier --write .
+
+# Add feature (e.g., auth screen)
+mkdir -p src/app/auth src/hooks/auth
+# Use Server-like actions via tRPC queries/mutations
+```
+
+Seamless Integration: Hooks auto-lint. Optimize: Enable Hermes in app.json. Cursor Rule: "Prefer hooks; lazy load with React.lazy."
+
+#### Step 4: Security & Performance Hardening
+Built-in: Encrypted storage, rate limiting via backend Redis.
+
+```bash
+# Backend setup (packages/api in monorepo)
+mkdir packages/api
+# In api: tRPC router with Redis cache
+pnpm add @upstash/redis  # Serverless Redis
+echo "import { Ratelimit } from '@upstash/ratelimit'; import { Redis } from '@upstash/redis'; const ratelimit = new Ratelimit({ redis: Redis.fromEnv(), limiter: Ratelimit.slidingWindow(10, '10 s') });" > packages/api/src/middleware.ts
+
+# app.json for efficiency
+echo "{ \"expo\": { \"jsEngine\": \"hermes\", \"android\": { \"enableProguardInReleaseBuilds\": true } } }" > app.json
+```
+
+Seamless Integration: RN calls tRPC endpoints (cached in Redis). Performance: Code split with dynamic imports.
+
+#### Step 5: Testing & Quality Gates
+Fast tests integrated.
+
+```bash
+# Setup Vitest (lightweight)
+pnpm add -D vitest @vitejs/plugin-react-native @testing-library/react-native jsdom
+echo "import { defineConfig } from 'vite'; import reactNative from '@vitejs/plugin-react-native'; export default defineConfig({ plugins: [reactNative()], test: { environment: 'jsdom' } });" > vite.config.ts
+
+# E2E: Detox
+expo install detox jest-expo jest-circus
+# Run: pnpm test
+
+# E2E run
+pnpm test:e2e
+```
+
+Seamless Integration: Tests share types. Cursor Rule: "Generate tests per feature; 90% coverage."
+
+#### Step 6: Build & Optimization
+Minimal bundles for stores.
+
+```bash
+# Build
+pnpm build
+
+# Analyze size
+pnpm expo-analyze
+
+# EAS for cloud builds
+expo install eas-cli
+eas build --platform all
+```
+
+Seamless Integration: Hermes minifies. Efficiency: App thinning.
+
+#### Step 7: CI/CD Pipeline
+GitHub Actions, integrated with Railway for backend.
+
+```yaml
+name: CI/CD
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - checkout
+      - pnpm/action-setup
+      - setup-node
+      - pnpm install
+      - pnpm lint
+      - pnpm test
+      - pnpm build
+  deploy:
+    needs: test
+    steps:
+      - ...  # EAS submit for stores; Railway deploy for api
+```
+
+Seamless Integration: Pushes build/deploy.
+
+#### Step 8: Deployment & Monitoring
+App stores + Railway for backend/Redis.
+
+```bash
+# Submit
+eas submit --platform all
+
+# Backend Docker (for Railway)
+cat <<EOL > packages/api/Dockerfile
+# Similar to Next.js, node base
+EOL
+
+# Monitoring
+pnpm add @sentry/react-native
+```
+
+Seamless Integration: OTA updates via EAS. Use Railway dashboard for Redis/DB.
+
+#### Step 9: Maintenance & Iteration
+```bash
+# Updates
+pnpm up --latest
+
+# DB migrate
+pnpm drizzle-kit migrate
+```
+
+Seamless Integration: Monorepo shares with web. Focus: Use Sentry for crashes.
+
+This scales to millions: RN front, tRPC/Redis back on Railway. Lightweight, secure, consistent.
