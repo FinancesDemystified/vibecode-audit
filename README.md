@@ -1,61 +1,92 @@
 # VibeCode Audit
 
-AI-powered URL security scanner with async processing, Groq AI analysis, and HTML/PDF reports.
+AI-powered security scanner: landing page → auth discovery → post-auth mapping → authenticated scanning.
+
+## Features
+
+- **Tech Stack Detection**: React/Next.js, hosting (Vercel/Netlify), platforms (Bubble/Replit/Lovable)
+- **Auth Flow Analysis**: Login forms, OAuth providers, endpoints
+- **Post-Auth Discovery**: Protected routes, dashboard detection, auth bypass testing
+- **Authenticated Scanning**: Login with credentials, crawl protected pages, test APIs
+- **AI Analysis**: Groq-powered narrative reports with prioritized recommendations
 
 ## Quick Start
 
 ```bash
-pnpm install && pnpm build && pnpm dev
+npm install && npm run build && npm start
+```
+
+## API Usage
+
+**Basic Scan:**
+```bash
+curl -X POST https://vibecode-audit-production.up.railway.app/api/trpc/scan.submit \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com"}'
+```
+
+**Authenticated Scan:**
+```bash
+curl -X POST https://vibecode-audit-production.up.railway.app/api/trpc/scan.submit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://app.com",
+    "credentials": {"email": "test@example.com", "password": "pass"}
+  }'
+```
+
+**Get Report:**
+```bash
+curl https://vibecode-audit-production.up.railway.app/api/report/{jobId}
 ```
 
 ## Environment Variables
 
-`.env.local`:
 ```bash
 REDIS_URL=redis://default:password@redis.railway.internal:6379
 GROQ_API_KEY=your_groq_key
 ```
 
-## Railway Deployment
+## Deployment
 
-**Project**: `vibecode-audit` (805acb24-68a8-4047-83de-6e12a4d0e66a)
+**Live**: https://vibecode-audit-production.up.railway.app
 
-**Status**: ✅ Redis service online
-
-### Deploy API
-**Via Dashboard:**
-1. New → GitHub Repo → Connect repo → Root: `.`
-2. Railway auto-detects Dockerfile
-3. After deploy: API service → Variables → "+ New Variable" → Reference `REDIS_URL` from Redis service
-4. Set: `GROQ_API_KEY` (from .env.local) and `NODE_ENV=production`
-5. Verify: `curl https://your-api.railway.app/api/health`
-
-**Via CLI:**
+**Deploy:**
 ```bash
-railway up
-railway variables --set "GROQ_API_KEY=your_key"
-railway variables --set "NODE_ENV=production"
+railway up --service vibecode-audit
 ```
 
-### Redis Options
-- **Railway**: Included with Hobby plan ($5/mo, 0.5GB)
-- **Upstash**: Free tier (500K commands/mo, 256MB) - use `UPSTASH_REDIS_URL` + `UPSTASH_REDIS_TOKEN`
+**Variables** (Railway Dashboard):
+- `REDIS_URL` - Reference from Redis service
+- `GROQ_API_KEY` - Your Groq API key
 
-Code auto-detects: `REDIS_URL` → Railway, `UPSTASH_REDIS_URL` → Upstash
+## Report Structure
+
+```json
+{
+  "score": 6,
+  "summary": "AI-generated narrative",
+  "findings": [...],
+  "techStack": {"framework": "React", "hosting": "Vercel"},
+  "authFlow": {"hasLoginForm": true, "oauthProviders": ["Google"]},
+  "postAuth": {"protectedRoutes": ["/dashboard"], "dashboardDetected": true},
+  "authenticatedScan": {"success": true, "pagesScanned": 3, "authenticatedPages": [...]}
+}
+```
 
 ## Structure
 
-- `packages/shared` - Zod schemas/types
-- `packages/agents` - Scanner agents (crawler, analyzer, AI, reporter)
-- `packages/api` - tRPC Express server
-- `packages/web` - Next.js frontend
+- `src/agents/scanner` - Crawler, extractor, post-auth discoverer, authenticated crawler
+- `src/agents/analyzer` - Vulnerability scanner
+- `src/agents/ai` - Groq LLM analysis
+- `src/agents/reporter` - Report generation
+- `src/router` - tRPC endpoints
+- `src/lib` - Redis, queue, rate limiting
 
 ## Commands
 
 ```bash
-pnpm dev        # Start all
-pnpm build      # Build all
-pnpm lint       # Lint
-pnpm test       # Test
-pnpm type-check # Type check
+npm run build      # Build
+npm start          # Start server
+npm run type-check # Type check
 ```

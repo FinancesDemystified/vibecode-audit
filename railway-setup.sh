@@ -1,49 +1,44 @@
 #!/bin/bash
-# Railway setup script for VibeCode Audit
-
+# Railway deployment for VibeCode Audit
 set -e
 
-echo "🚂 Setting up Railway project..."
+echo "🚂 Railway Deployment Guide"
+echo ""
 
 # Check if logged in
 if ! railway whoami &>/dev/null; then
-  echo "Please log in to Railway:"
+  echo "Step 1: Login to Railway"
   railway login
+  echo ""
 fi
 
-# Create new project or link existing
-if [ -z "$RAILWAY_PROJECT_ID" ]; then
-  echo "Creating new Railway project..."
-  railway init
-else
-  echo "Linking to existing project..."
-  railway link "$RAILWAY_PROJECT_ID"
+# Check project link
+if ! railway status &>/dev/null 2>&1; then
+  echo "Step 2: Link to Railway project (already created: vibecode-audit)"
+  echo "Run: railway link"
+  echo "Select: vibecode-audit"
+  railway link
+  echo ""
 fi
 
-# Add Redis service
-echo "Adding Redis service..."
-railway add redis
+echo "✅ Setup Steps:"
+echo ""
+echo "1. Add Redis via Railway Dashboard:"
+echo "   → Go to: https://railway.com/project/805acb24-68a8-4047-83de-6e12a4d0e66a"
+echo "   → Click '+ New' → 'Database' → 'Add Redis'"
+echo "   → Railway auto-sets REDIS_URL env var"
+echo ""
+echo "2. Set Environment Variables:"
+echo "   → In Railway dashboard → Variables tab"
+echo "   → Add: GROQ_API_KEY=<your-key>"
+echo "   → REDIS_URL will auto-populate from Redis service"
+echo ""
+echo "3. Deploy:"
+railway up --detach
+echo ""
+echo "✅ Deployment initiated!"
+echo "Monitor: https://railway.com/project/805acb24-68a8-4047-83de-6e12a4d0e66a"
+echo ""
+echo "Get domain: railway domain"
 
-# Get Redis URL
-echo "Getting Redis connection details..."
-REDIS_URL=$(railway variables --json | jq -r '.[] | select(.name == "REDIS_URL") | .value')
-
-if [ -z "$REDIS_URL" ]; then
-  echo "⚠️  Redis URL not found. Please add Redis service manually in Railway dashboard."
-  echo "Then set REDIS_URL environment variable."
-else
-  echo "✅ Redis URL: $REDIS_URL"
-fi
-
-# Set environment variables
-echo "Setting environment variables..."
-railway variables set GROQ_API_KEY="$GROQ_API_KEY"
-railway variables set NODE_ENV=production
-
-# Deploy
-echo "Deploying to Railway..."
-railway up
-
-echo "✅ Setup complete!"
-echo "Your API will be available at: https://$(railway domain)"
 
