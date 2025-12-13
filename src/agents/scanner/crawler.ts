@@ -81,16 +81,71 @@ function extractTechStack(html: string, headers: Record<string, string>, url: st
   
   // Detect framework
   let framework: string | undefined;
-  if (html.includes('__NEXT_DATA__') || scripts.some(s => s.includes('_next'))) {
+  const htmlLower = html.toLowerCase();
+  
+  // Next.js
+  if (html.includes('__NEXT_DATA__') || scripts.some(s => s.includes('_next') || s.includes('/_next/'))) {
     framework = 'Next.js';
-  } else if (html.includes('__NUXT__') || scripts.some(s => s.includes('_nuxt'))) {
+  }
+  // Nuxt.js
+  else if (html.includes('__NUXT__') || scripts.some(s => s.includes('_nuxt') || s.includes('/_nuxt/'))) {
     framework = 'Nuxt.js';
-  } else if (html.includes('data-react-helmet') || scripts.some(s => s.includes('react'))) {
+  }
+  // Gatsby
+  else if (html.includes('__GATSBY') || scripts.some(s => s.includes('gatsby') || s.includes('/gatsby/'))) {
+    framework = 'Gatsby';
+  }
+  // Astro
+  else if (html.includes('__ASTRO') || scripts.some(s => s.includes('/_astro/') || s.includes('astro'))) {
+    framework = 'Astro';
+  }
+  // SvelteKit
+  else if (html.includes('__svelte') || scripts.some(s => s.includes('/_app/') || s.includes('svelte'))) {
+    framework = 'SvelteKit';
+  }
+  // Remix
+  else if (scripts.some(s => s.includes('remix') || s.includes('/build/'))) {
+    framework = 'Remix';
+  }
+  // Svelte
+  else if (html.includes('svelte-') || scripts.some(s => s.includes('svelte'))) {
+    framework = 'Svelte';
+  }
+  // 11ty/Eleventy
+  else if (metaTags['generator']?.includes('eleventy') || metaTags['generator']?.includes('11ty')) {
+    framework = '11ty';
+  }
+  // Hugo
+  else if (metaTags['generator']?.includes('hugo') || html.includes('hugo')) {
+    framework = 'Hugo';
+  }
+  // Jekyll
+  else if (metaTags['generator']?.includes('jekyll') || html.includes('jekyll')) {
+    framework = 'Jekyll';
+  }
+  // React (generic)
+  else if (html.includes('data-react-helmet') || scripts.some(s => s.includes('react') || s.includes('react-dom'))) {
     framework = 'React';
-  } else if (html.includes('data-vue') || html.includes('v-cloak')) {
+  }
+  // Vue.js
+  else if (html.includes('data-vue') || html.includes('v-cloak') || scripts.some(s => s.includes('vue'))) {
     framework = 'Vue.js';
-  } else if (html.includes('ng-version')) {
+  }
+  // Angular
+  else if (html.includes('ng-version') || scripts.some(s => s.includes('angular'))) {
     framework = 'Angular';
+  }
+  // SolidJS
+  else if (scripts.some(s => s.includes('solid')) || html.includes('solid-')) {
+    framework = 'SolidJS';
+  }
+  // Infer static site if minimal JS and no framework detected
+  else {
+    const scriptCount = scripts.length;
+    const hasMinimalJS = scriptCount <= 2 && !html.includes('__') && !html.includes('data-react');
+    if (hasMinimalJS) {
+      framework = 'Static Site (likely SSG)';
+    }
   }
   
   // Detect hosting/platform
@@ -118,6 +173,16 @@ function extractTechStack(html: string, headers: Record<string, string>, url: st
     platform = 'Bolt.new';
   } else if (metaTags['generator']?.includes('lovable')) {
     platform = 'Lovable';
+  } else if (scripts.some(s => s.includes('framer')) || html.includes('framer')) {
+    platform = 'Framer';
+  } else if (scripts.some(s => s.includes('wix.com')) || html.includes('wix-static')) {
+    platform = 'Wix';
+  } else if (scripts.some(s => s.includes('squarespace')) || html.includes('squarespace')) {
+    platform = 'Squarespace';
+  } else if (html.includes('wp-content') || scripts.some(s => s.includes('wp-includes'))) {
+    platform = 'WordPress';
+  } else if (scripts.some(s => s.includes('shopify')) || html.includes('shopify')) {
+    platform = 'Shopify';
   }
   
   return { server, framework, hosting, platform, scripts, metaTags };

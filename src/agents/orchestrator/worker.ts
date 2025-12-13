@@ -90,6 +90,17 @@ export function createWorker(queueName: string = 'scan-queue') {
         const jobData = await redis.get(`job:${jobId}`);
         const job = jobData ? (process.env.REDIS_URL ? JSON.parse(jobData) : jobData) : null;
         
+        // Format tech stack with inferences instead of null/undefined
+        const formatTechStack = (ts: typeof securityData.techStack) => ({
+          framework: ts.framework || 'Likely static site or SSG (framework not identified)',
+          hosting: ts.hosting || (ts.server ? `Unknown hosting (server: ${ts.server})` : 'Hosting platform not identified'),
+          platform: ts.platform || 'No-code platform not detected',
+          server: ts.server || 'Server not identified',
+        });
+
+        // Format auth flow - keep structure but provide better defaults in report display
+        const formatAuthFlow = (af: typeof securityData.authFlow) => af;
+
         const report = {
           jobId,
           url,
@@ -100,19 +111,14 @@ export function createWorker(queueName: string = 'scan-queue') {
           recommendations: analysis.recommendations,
           confidence: analysis.confidence,
           limitations: 'External-only scan. Upgrade for codebase review.',
-          techStack: {
-            framework: securityData.techStack.framework,
-            hosting: securityData.techStack.hosting,
-            platform: securityData.techStack.platform,
-            server: securityData.techStack.server,
-          },
-          authFlow: securityData.authFlow,
+          techStack: formatTechStack(securityData.techStack),
+          authFlow: formatAuthFlow(securityData.authFlow),
           postAuth: {
             authMechanism: postAuthData.authMechanism,
-            loginEndpoint: postAuthData.loginEndpoint,
-            protectedRoutes: postAuthData.protectedRoutes,
+            loginEndpoint: postAuthData.loginEndpoint || 'Login endpoint not found in public pages',
+            protectedRoutes: postAuthData.protectedRoutes.length > 0 ? postAuthData.protectedRoutes : ['No protected routes detected'],
             dashboardDetected: postAuthData.dashboardIndicators.found,
-            likelyFeatures: postAuthData.dashboardIndicators.features,
+            likelyFeatures: postAuthData.dashboardIndicators.features.length > 0 ? postAuthData.dashboardIndicators.features : ['No dashboard features detected'],
             securityIssues: postAuthData.securityIssues,
             recommendations: postAuthData.recommendations,
           },

@@ -117,21 +117,49 @@ export async function discoverPostAuth(
   }
 
   // Detect dashboard indicators
-  const dashboardKeywords = ['dashboard', 'workspace', 'portal', 'panel', 'console', 'my account'];
-  const featureKeywords = ['analytics', 'reports', 'insights', 'metrics', 'data', 'chart'];
+  const dashboardKeywords = ['dashboard', 'workspace', 'portal', 'panel', 'console', 'my account', 'admin panel', 'control panel'];
+  const featureKeywords = ['analytics', 'reports', 'insights', 'metrics', 'data', 'chart', 'statistics', 'overview'];
   
+  // Check for dashboard in links and routes
+  const dashboardLinkRegex = /href=["']([^"']*(?:dashboard|workspace|portal|panel|console|admin)[^"']*)["']/gi;
+  let dashboardLinkMatch;
+  while ((dashboardLinkMatch = dashboardLinkRegex.exec(html)) !== null) {
+    result.dashboardIndicators.found = true;
+    const path = dashboardLinkMatch[1].split('?')[0].split('#')[0];
+    if (!result.dashboardIndicators.likelyPaths.includes(path)) {
+      result.dashboardIndicators.likelyPaths.push(path);
+    }
+  }
+  
+  // Check for dashboard keywords in content
   dashboardKeywords.forEach(kw => {
     if (htmlLower.includes(kw)) {
       result.dashboardIndicators.found = true;
-      result.dashboardIndicators.likelyPaths.push(`/${kw.replace(' ', '-')}`);
+      const path = `/${kw.replace(/\s+/g, '-')}`;
+      if (!result.dashboardIndicators.likelyPaths.includes(path)) {
+        result.dashboardIndicators.likelyPaths.push(path);
+      }
     }
   });
 
+  // Check for dashboard features
   featureKeywords.forEach(kw => {
     if (htmlLower.includes(kw)) {
-      result.dashboardIndicators.features.push(kw);
+      if (!result.dashboardIndicators.features.includes(kw)) {
+        result.dashboardIndicators.features.push(kw);
+      }
     }
   });
+  
+  // Check for dashboard API endpoints
+  const dashboardApiRegex = /["']([^"']*\/api\/(?:dashboard|analytics|metrics|stats|reports)[^"']*)["']/gi;
+  let apiMatch;
+  while ((apiMatch = dashboardApiRegex.exec(html)) !== null) {
+    result.dashboardIndicators.found = true;
+    if (!result.dashboardIndicators.features.includes('API endpoints')) {
+      result.dashboardIndicators.features.push('API endpoints');
+    }
+  }
 
   await eventBus.publish(jobId, {
     type: 'agent.progress',
