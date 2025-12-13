@@ -37,9 +37,6 @@ out
 # Turbo
 .turbo
 
-# TypeScript
-*.tsbuildinfo
-
 # IDE
 .vscode/*
 !.vscode/settings.json
