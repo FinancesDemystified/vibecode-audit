@@ -51,14 +51,28 @@ GROQ_API_KEY=your_groq_key
 
 **Live**: https://vibecode-audit-production.up.railway.app
 
-**Deploy:**
+**Quick Deploy:**
 ```bash
-railway up --service vibecode-audit
+railway up --service vibecode-audit --detach
 ```
 
-**Variables** (Railway Dashboard):
-- `REDIS_URL` - Reference from Redis service
-- `GROQ_API_KEY` - Your Groq API key
+**Set Variables** (Railway Dashboard):
+1. Go to: https://railway.com/project/805acb24-68a8-4047-83de-6e12a4d0e66a/service/7ec240fb-6275-464f-bee7-aa1075bb3cb6
+2. Variables tab → Add:
+   - `REDIS_URL` - Reference from Redis service
+   - `GROQ_API_KEY` - Your Groq API key
+   - `RATE_LIMIT_WHITELIST` - Comma-separated IPs (optional, for dev)
+
+**Check Status:**
+```bash
+railway logs --service vibecode-audit --tail 20
+railway domain --service vibecode-audit
+```
+
+**Verify:**
+```bash
+curl https://vibecode-audit-production.up.railway.app/api/health
+```
 
 ## Report Structure
 
