@@ -22,11 +22,36 @@ interface Finding {
   description?: string;
 }
 
+interface DeepSecurity {
+  overallScore?: number;
+  securityCopyAnalysis?: {
+    privacyPolicy?: { found: boolean; score: number };
+    securityPage?: { found: boolean; score: number };
+  };
+  authenticationTesting?: {
+    rateLimiting?: { protected: boolean };
+    sessionManagement?: { secureCookies: boolean };
+  };
+  recommendations?: Array<{ priority: string; category: string; issue: string; fix: string }>;
+}
+
+interface VibeCodingVulnerabilities {
+  overallRisk?: 'low' | 'medium' | 'high' | 'critical';
+  score?: number;
+  hardCodedSecrets?: Array<{ type: string; severity: string; evidence: string }>;
+  clientSideAuth?: { detected: boolean; risk: string; authImplementation: string };
+  unauthenticatedApiAccess?: Array<{ url: string; severity: string; dataType?: string; evidence: string }>;
+  backendMisconfigurations?: Array<{ type: string; severity: string; evidence: string }>;
+  recommendations?: Array<{ priority: string; category: string; issue: string; fix: string }>;
+}
+
 interface Report {
   score?: number;
   summary?: string;
   findings?: Finding[];
   techStack?: { framework?: string; hosting?: string };
+  deepSecurity?: DeepSecurity;
+  vibeCodingVulnerabilities?: VibeCodingVulnerabilities;
   [key: string]: unknown;
 }
 
@@ -811,6 +836,180 @@ export default function Home() {
               </div>
             )}
 
+            {/* Deep Security Analysis */}
+            {report.deepSecurity && (
+              <div className="bg-white border-2 border-blue-200 rounded-xl p-6 shadow-lg">
+                <h3 className="text-xl font-bold mb-4 text-gray-900 flex items-center gap-2">
+                  <span>🛡️</span>
+                  <span>Deep Security Analysis</span>
+                  <span className="text-lg text-gray-500">({report.deepSecurity.overallScore || 0}/100)</span>
+                </h3>
+                
+                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Privacy Policy</p>
+                    <p className="text-lg font-bold">{report.deepSecurity.securityCopyAnalysis?.privacyPolicy?.found ? '✅ Found' : '❌ Not Found'}</p>
+                    {report.deepSecurity.securityCopyAnalysis?.privacyPolicy?.score !== undefined && (
+                      <p className="text-xs text-gray-600">Score: {report.deepSecurity.securityCopyAnalysis.privacyPolicy.score}/100</p>
+                    )}
+                  </div>
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Security Page</p>
+                    <p className="text-lg font-bold">{report.deepSecurity.securityCopyAnalysis?.securityPage?.found ? '✅ Found' : '❌ Not Found'}</p>
+                  </div>
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Secure Cookies</p>
+                    <p className="text-lg font-bold">{report.deepSecurity.authenticationTesting?.sessionManagement?.secureCookies ? '✅ Yes' : '❌ No'}</p>
+                  </div>
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Rate Limiting</p>
+                    <p className="text-lg font-bold">{report.deepSecurity.authenticationTesting?.rateLimiting?.protected ? '✅ Protected' : '⚠️ Not Tested'}</p>
+                  </div>
+                </div>
+
+                {report.deepSecurity.recommendations && report.deepSecurity.recommendations.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h4 className="font-semibold text-gray-900 mb-2">Key Recommendations:</h4>
+                    <div className="space-y-2">
+                      {report.deepSecurity.recommendations.slice(0, 3).map((rec, i) => (
+                        <div key={i} className="text-sm">
+                          <span className={`font-semibold ${
+                            rec.priority === 'critical' ? 'text-red-600' :
+                            rec.priority === 'high' ? 'text-orange-600' :
+                            'text-gray-700'
+                          }`}>
+                            [{rec.priority.toUpperCase()}]
+                          </span>
+                          <span className="text-gray-700"> {rec.issue}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Vibe-Coding Vulnerabilities */}
+            {report.vibeCodingVulnerabilities && (
+              <div className="bg-white border-2 border-purple-200 rounded-xl p-6 shadow-lg">
+                <h3 className="text-xl font-bold mb-4 text-gray-900 flex items-center gap-2">
+                  <span>🔍</span>
+                  <span>Vibe-Coding Vulnerability Scan</span>
+                  <span className={`text-lg font-bold ${
+                    report.vibeCodingVulnerabilities.overallRisk === 'critical' ? 'text-red-600' :
+                    report.vibeCodingVulnerabilities.overallRisk === 'high' ? 'text-orange-600' :
+                    report.vibeCodingVulnerabilities.overallRisk === 'medium' ? 'text-yellow-600' :
+                    'text-green-600'
+                  }`}>
+                    ({report.vibeCodingVulnerabilities.overallRisk?.toUpperCase() || 'N/A'})
+                  </span>
+                  <span className="text-lg text-gray-500">({report.vibeCodingVulnerabilities.score || 0}/100)</span>
+                </h3>
+
+                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                  <div className="bg-purple-50 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Hard-Coded Secrets</p>
+                    <p className="text-2xl font-bold text-purple-600">{report.vibeCodingVulnerabilities.hardCodedSecrets?.length || 0}</p>
+                    <p className="text-xs text-gray-600">Found in JS bundles</p>
+                  </div>
+                  <div className="bg-purple-50 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Client-Side Auth</p>
+                    <p className="text-lg font-bold">{report.vibeCodingVulnerabilities.clientSideAuth?.detected ? '⚠️ Detected' : '✅ Server-Side'}</p>
+                    {report.vibeCodingVulnerabilities.clientSideAuth && (
+                      <p className="text-xs text-gray-600">Risk: {report.vibeCodingVulnerabilities.clientSideAuth.risk}</p>
+                    )}
+                  </div>
+                  <div className="bg-purple-50 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Unauthenticated APIs</p>
+                    <p className="text-2xl font-bold text-purple-600">{report.vibeCodingVulnerabilities.unauthenticatedApiAccess?.length || 0}</p>
+                    <p className="text-xs text-gray-600">Endpoints exposing data</p>
+                  </div>
+                  <div className="bg-purple-50 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-1">Backend Misconfigs</p>
+                    <p className="text-2xl font-bold text-purple-600">{report.vibeCodingVulnerabilities.backendMisconfigurations?.length || 0}</p>
+                    <p className="text-xs text-gray-600">Security issues</p>
+                  </div>
+                </div>
+
+                {/* Hard-Coded Secrets List */}
+                {report.vibeCodingVulnerabilities.hardCodedSecrets && report.vibeCodingVulnerabilities.hardCodedSecrets.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h4 className="font-semibold text-red-600 mb-2">🚨 Hard-Coded Secrets Found:</h4>
+                    <div className="space-y-2">
+                      {report.vibeCodingVulnerabilities.hardCodedSecrets.slice(0, 5).map((secret, i) => (
+                        <div key={i} className="bg-red-50 border border-red-200 rounded-lg p-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-semibold text-red-800">{secret.type}</p>
+                              <p className="text-sm text-gray-700">{secret.evidence}</p>
+                            </div>
+                            <span className={`text-xs px-2 py-1 rounded uppercase font-medium ${
+                              secret.severity === 'critical' ? 'bg-red-200 text-red-800' :
+                              secret.severity === 'high' ? 'bg-orange-200 text-orange-800' :
+                              'bg-yellow-200 text-yellow-800'
+                            }`}>
+                              {secret.severity}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Unauthenticated API Endpoints */}
+                {report.vibeCodingVulnerabilities.unauthenticatedApiAccess && report.vibeCodingVulnerabilities.unauthenticatedApiAccess.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h4 className="font-semibold text-orange-600 mb-2">⚠️ Unauthenticated API Endpoints:</h4>
+                    <div className="space-y-2">
+                      {report.vibeCodingVulnerabilities.unauthenticatedApiAccess.slice(0, 5).map((endpoint, i) => (
+                        <div key={i} className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-orange-800 break-all">{endpoint.url}</p>
+                              <p className="text-sm text-gray-700">{endpoint.evidence}</p>
+                              {endpoint.dataType && (
+                                <p className="text-xs text-gray-600 mt-1">Data Type: {endpoint.dataType}</p>
+                              )}
+                            </div>
+                            <span className={`text-xs px-2 py-1 rounded uppercase font-medium flex-shrink-0 ml-2 ${
+                              endpoint.severity === 'critical' ? 'bg-red-200 text-red-800' :
+                              endpoint.severity === 'high' ? 'bg-orange-200 text-orange-800' :
+                              'bg-yellow-200 text-yellow-800'
+                            }`}>
+                              {endpoint.severity}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                {report.vibeCodingVulnerabilities.recommendations && report.vibeCodingVulnerabilities.recommendations.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <h4 className="font-semibold text-gray-900 mb-2">Recommendations:</h4>
+                    <div className="space-y-2">
+                      {report.vibeCodingVulnerabilities.recommendations.slice(0, 5).map((rec, i) => (
+                        <div key={i} className="text-sm">
+                          <span className={`font-semibold ${
+                            rec.priority === 'critical' ? 'text-red-600' :
+                            rec.priority === 'high' ? 'text-orange-600' :
+                            'text-gray-700'
+                          }`}>
+                            [{rec.priority.toUpperCase()}]
+                          </span>
+                          <span className="text-gray-700"> {rec.category}: {rec.issue}</span>
+                          <p className="text-xs text-gray-600 ml-6 mt-1">Fix: {rec.fix}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Level 5: Unlock Detailed Fixes */}
             {showEmailGate && !unlocked && (
               <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400 rounded-2xl p-8 text-center shadow-lg">
@@ -858,9 +1057,142 @@ export default function Home() {
               </div>
             )}
 
+            {/* Deep Security Analysis - Full Details */}
+            {report.deepSecurity && (
+              <div className="bg-white border-2 border-blue-200 rounded-xl p-6 shadow-lg">
+                <h3 className="text-xl font-bold mb-4 text-gray-900 flex items-center gap-2">
+                  <span>🛡️</span>
+                  <span>Deep Security Analysis</span>
+                  <span className="text-lg text-gray-500">({report.deepSecurity.overallScore || 0}/100)</span>
+                </h3>
+                
+                {report.deepSecurity.recommendations && report.deepSecurity.recommendations.length > 0 && (
+                  <div className="space-y-3">
+                    {report.deepSecurity.recommendations.map((rec, i) => (
+                      <div key={i} className={`border-l-4 pl-4 py-2 ${
+                        rec.priority === 'critical' ? 'border-red-500 bg-red-50' :
+                        rec.priority === 'high' ? 'border-orange-500 bg-orange-50' :
+                        'border-yellow-500 bg-yellow-50'
+                      }`}>
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <span className={`font-semibold ${
+                            rec.priority === 'critical' ? 'text-red-700' :
+                            rec.priority === 'high' ? 'text-orange-700' :
+                            'text-yellow-700'
+                          }`}>
+                            [{rec.priority.toUpperCase()}] {rec.category}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-700 mb-1">{rec.issue}</p>
+                        <p className="text-sm font-medium text-gray-900">Fix: {rec.fix}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Vibe-Coding Vulnerabilities - Full Details */}
+            {report.vibeCodingVulnerabilities && (
+              <div className="bg-white border-2 border-purple-200 rounded-xl p-6 shadow-lg">
+                <h3 className="text-xl font-bold mb-4 text-gray-900 flex items-center gap-2">
+                  <span>🔍</span>
+                  <span>Vibe-Coding Vulnerability Scan</span>
+                  <span className={`text-lg font-bold ${
+                    report.vibeCodingVulnerabilities.overallRisk === 'critical' ? 'text-red-600' :
+                    report.vibeCodingVulnerabilities.overallRisk === 'high' ? 'text-orange-600' :
+                    report.vibeCodingVulnerabilities.overallRisk === 'medium' ? 'text-yellow-600' :
+                    'text-green-600'
+                  }`}>
+                    ({report.vibeCodingVulnerabilities.overallRisk?.toUpperCase() || 'N/A'})
+                  </span>
+                </h3>
+
+                {report.vibeCodingVulnerabilities.hardCodedSecrets && report.vibeCodingVulnerabilities.hardCodedSecrets.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="font-semibold text-red-600 mb-3">🚨 Hard-Coded Secrets ({report.vibeCodingVulnerabilities.hardCodedSecrets.length})</h4>
+                    <div className="space-y-2">
+                      {report.vibeCodingVulnerabilities.hardCodedSecrets.map((secret, i) => (
+                        <div key={i} className="bg-red-50 border border-red-200 rounded-lg p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="font-semibold text-red-800">{secret.type}</p>
+                              <p className="text-sm text-gray-700 mt-1">{secret.evidence}</p>
+                            </div>
+                            <span className={`text-xs px-2 py-1 rounded uppercase font-medium ${
+                              secret.severity === 'critical' ? 'bg-red-200 text-red-800' :
+                              secret.severity === 'high' ? 'bg-orange-200 text-orange-800' :
+                              'bg-yellow-200 text-yellow-800'
+                            }`}>
+                              {secret.severity}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {report.vibeCodingVulnerabilities.unauthenticatedApiAccess && report.vibeCodingVulnerabilities.unauthenticatedApiAccess.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="font-semibold text-orange-600 mb-3">⚠️ Unauthenticated API Endpoints ({report.vibeCodingVulnerabilities.unauthenticatedApiAccess.length})</h4>
+                    <div className="space-y-2">
+                      {report.vibeCodingVulnerabilities.unauthenticatedApiAccess.map((endpoint, i) => (
+                        <div key={i} className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-orange-800 break-all">{endpoint.url}</p>
+                              <p className="text-sm text-gray-700 mt-1">{endpoint.evidence}</p>
+                              {endpoint.dataType && (
+                                <p className="text-xs text-gray-600 mt-1">Data Type: {endpoint.dataType}</p>
+                              )}
+                            </div>
+                            <span className={`text-xs px-2 py-1 rounded uppercase font-medium flex-shrink-0 ml-2 ${
+                              endpoint.severity === 'critical' ? 'bg-red-200 text-red-800' :
+                              endpoint.severity === 'high' ? 'bg-orange-200 text-orange-800' :
+                              'bg-yellow-200 text-yellow-800'
+                            }`}>
+                              {endpoint.severity}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {report.vibeCodingVulnerabilities.recommendations && report.vibeCodingVulnerabilities.recommendations.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-3">Recommendations ({report.vibeCodingVulnerabilities.recommendations.length})</h4>
+                    <div className="space-y-3">
+                      {report.vibeCodingVulnerabilities.recommendations.map((rec, i) => (
+                        <div key={i} className={`border-l-4 pl-4 py-2 ${
+                          rec.priority === 'critical' ? 'border-red-500 bg-red-50' :
+                          rec.priority === 'high' ? 'border-orange-500 bg-orange-50' :
+                          'border-yellow-500 bg-yellow-50'
+                        }`}>
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <span className={`font-semibold ${
+                              rec.priority === 'critical' ? 'text-red-700' :
+                              rec.priority === 'high' ? 'text-orange-700' :
+                              'text-yellow-700'
+                            }`}>
+                              [{rec.priority.toUpperCase()}] {rec.category}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700 mb-1">{rec.issue}</p>
+                          <p className="text-sm font-medium text-gray-900">Fix: {rec.fix}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {report.findings && report.findings.length > 0 && (
               <div className="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-lg">
-                <h3 className="text-xl font-bold mb-4 text-gray-900">Fix Guide</h3>
+                <h3 className="text-xl font-bold mb-4 text-gray-900">Basic Security Findings</h3>
                 <div className="space-y-4">
                   {report.findings
                     .sort((a, b) => {
@@ -923,8 +1255,13 @@ export default function Home() {
 
       {/* Footer */}
       <div className="border-t border-gray-200 mt-20">
-        <div className="max-w-4xl mx-auto px-4 py-6 text-center">
-          <p className="text-sm text-gray-500">© 2025 VibeCode Audit</p>
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="flex flex-wrap justify-center items-center gap-6 mb-3">
+            <a href="/privacy" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Privacy Policy</a>
+            <a href="/security" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Security</a>
+            <a href="mailto:security@vibecodeaudit.app" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Contact</a>
+          </div>
+          <p className="text-sm text-gray-500 text-center">© 2025 VibeCode Audit</p>
         </div>
       </div>
     </div>
