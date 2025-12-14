@@ -159,17 +159,22 @@ export async function performDeepSecurityAnalysis(
   let overallScore: number;
   if (!hasAuth) {
     // Static site: redistribute 35% auth weight across other categories
-    overallScore = calculateOverallScore({
-      securityCopy: securityCopy.aiAnalysis.accuracy * 0.40, // 25% + 15% from auth
-      authTesting: 0,
-      behavioral: (behavioral.csrfProtection.protected ? 33 : 0) + (!behavioral.xssProtection.vulnerable ? 33 : 0) + (!behavioral.inputValidation.vulnerable ? 34 : 0) * 0.40, // 25% + 15% from auth
-      claimVerification: claimVerification.score * 0.20, // 15% + 5% from auth
-    });
+    // Direct calculation without double-weighting
+    const secCopyScore = securityCopy.aiAnalysis.accuracy * 0.40; // 40% weight
+    const behavScore = ((behavioral.csrfProtection.protected ? 33 : 0) + 
+                        (!behavioral.xssProtection.vulnerable ? 33 : 0) + 
+                        (!behavioral.inputValidation.vulnerable ? 34 : 0)) * 0.40; // 40% weight
+    const claimScore = claimVerification.score * 0.20; // 20% weight
+    overallScore = secCopyScore + behavScore + claimScore;
   } else {
     // App with auth: use standard weighting
+    const authScore = ((authTesting.rateLimiting.protected ? 25 : 0) + 
+                       (authTesting.bruteForceProtection.protected ? 25 : 0) + 
+                       (authTesting.sessionManagement.secureCookies ? 25 : 0) + 
+                       (authTesting.passwordPolicy.enforced ? 25 : 0));
     overallScore = calculateOverallScore({
       securityCopy: securityCopy.aiAnalysis.accuracy * 0.25,
-      authTesting: (authTesting.rateLimiting.protected ? 25 : 0) + (authTesting.bruteForceProtection.protected ? 25 : 0) + (authTesting.sessionManagement.secureCookies ? 25 : 0) + (authTesting.passwordPolicy.enforced ? 25 : 0),
+      authTesting: authScore,
       behavioral: (behavioral.csrfProtection.protected ? 33 : 0) + (!behavioral.xssProtection.vulnerable ? 33 : 0) + (!behavioral.inputValidation.vulnerable ? 34 : 0),
       claimVerification: claimVerification.score,
     });
