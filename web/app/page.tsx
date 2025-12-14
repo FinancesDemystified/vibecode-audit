@@ -46,7 +46,15 @@ export default function Home() {
         body: JSON.stringify({ url }),
       });
 
-      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+      if (!res.ok) {
+        const errText = await res.text();
+        let errMsg = `Failed: ${res.status}`;
+        try {
+          const errJson = JSON.parse(errText);
+          errMsg = errJson.error?.message || errText;
+        } catch {}
+        throw new Error(errMsg);
+      }
       
       const data: ScanResponse = await res.json();
       const newJobId = data.result?.data?.jobId;
