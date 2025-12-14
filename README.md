@@ -104,3 +104,122 @@ npm run build      # Build
 npm start          # Start server
 npm run type-check # Type check
 ```
+
+## Lessons Learned & Infrastructure Patterns
+
+### Build Failures & Solutions
+
+**Issue 1: Package Lock File Mismatch**
+- **Problem**: `package-lock.json` had `tailwindcss@4.1.18` while `package.json` specified `^3.4.1`
+- **Root Cause**: Lock file out of sync with package.json; `npm ci` requires exact version match
+- **Solution**: Regenerate lock file: `cd web && rm package-lock.json && npm install`
+- **Prevention**: Always commit `package-lock.json` and regenerate when dependencies change
+
+**Issue 2: Missing Public Directory**
+- **Problem**: Dockerfile `COPY --from=builder /app/public ./public` failed - directory doesn't exist
+- **Root Cause**: Next.js `public/` directory is optional but Dockerfile assumed it exists
+- **Solution**: Use conditional copy: `RUN mkdir -p ./public && (cp -r /app/public/* ./public/ 2>/dev/null || true)`
+- **Prevention**: Create empty `public/.gitkeep` or make Dockerfile handle missing directories gracefully
+
+### Templatable Architecture Pattern
+
+**Monorepo Structure:**
+```
+/
+├── src/              # Backend (Express + tRPC)
+│   ├── agents/      # AI agents (scanner, analyzer, reporter)
+│   ├── router/      # tRPC endpoints
+│   └── lib/         # Redis, queue, rate limiting
+├── web/             # Frontend (Next.js)
+│   ├── app/         # Next.js App Router
+│   ├── components/ # React components
+│   └── lib/         # tRPC client
+├── railway.json     # Backend Railway config (DOCKERFILE)
+└── web/railway.json # Frontend Railway config (NIXPACKS)
+```
+
+**Deployment Pattern:**
+
+1. **Backend (Railway + Dockerfile)**:
+   - Root `railway.json` → `builder: DOCKERFILE`
+   - Root `Dockerfile` → Multi-stage build for TypeScript backend
+   - Separate service for backend API
+
+2. **Frontend (Railway + NIXPACKS/Dockerfile)**:
+   - `web/railway.json` → `builder: NIXPACKS` (auto-detects Next.js)
+   - `web/Dockerfile` → Multi-stage build for Next.js (optional, if NIXPACKS fails)
+   - Separate service for frontend
+
+**Key Dockerfile Patterns:**
+
+```dockerfile
+# Backend Dockerfile (root)
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY src ./src
+RUN npm run build
+
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+RUN npm install --production
+CMD ["node", "dist/server.js"]
+
+# Frontend Dockerfile (web/)
+FROM node:20-alpine AS base
+FROM base AS deps
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npm run build
+
+FROM base AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=builder /app/.next ./.next
+RUN mkdir -p ./public && (cp -r /app/public/* ./public/ 2>/dev/null || true)
+COPY --from=builder /app/next.config.js ./next.config.js
+COPY --from=deps /app/node_modules ./node_modules
+CMD ["npm", "start"]
+```
+
+**Best Practices:**
+
+1. **Lock Files**: Always commit `package-lock.json`; regenerate when dependencies change
+2. **Public Directory**: Create empty `public/.gitkeep` or handle missing directories in Dockerfile
+3. **Separate Services**: Deploy frontend/backend as separate Railway services
+4. **Build Context**: Use `railway.json` to specify build context (root vs `web/`)
+5. **Environment Variables**: Set per-service in Railway dashboard
+6. **Health Checks**: Include `/api/health` endpoint for monitoring
+
+**Railway Configuration:**
+
+```json
+// Root railway.json (Backend)
+{
+  "build": { "builder": "DOCKERFILE", "dockerfilePath": "Dockerfile" },
+  "deploy": { "startCommand": "node dist/server.js" }
+}
+
+// web/railway.json (Frontend)
+{
+  "build": { "builder": "NIXPACKS" },
+  "deploy": { "startCommand": "npm start" }
+}
+```
+
+**Troubleshooting Checklist:**
+
+- [ ] `package-lock.json` matches `package.json` versions
+- [ ] `public/` directory exists or Dockerfile handles missing gracefully
+- [ ] Railway service uses correct build context (root vs `web/`)
+- [ ] Environment variables set in Railway dashboard
+- [ ] Health endpoint responds: `curl $DEPLOY_URL/api/health`

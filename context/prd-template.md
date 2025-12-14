@@ -393,10 +393,68 @@
         "phase2": { "db": "PostgreSQL (Neon)", "auth": "NextAuth.js or Clerk", "tables": [ "users", "scans", "reports", "subscriptions" ] }
       },
       "deployment": { 
-        "host": "Vercel (frontend) + Railway (backend API)", 
-        "cdn": "Vercel Edge Network", 
+        "host": "Railway (frontend + backend)", 
+        "cdn": "Railway Edge Network", 
         "ciCd": "GitHub Actions", 
-        "envs": [ "dev", "staging", "prod" ] 
+        "envs": [ "dev", "staging", "prod" ],
+        "pattern": "monorepo-separate-services",
+        "lessonsLearned": {
+          "packageLockSync": {
+            "issue": "package-lock.json version mismatch causes npm ci failures",
+            "solution": "Always regenerate lock file when dependencies change: cd web && rm package-lock.json && npm install",
+            "prevention": "Commit package-lock.json; verify versions match package.json before deploying"
+          },
+          "publicDirectory": {
+            "issue": "Dockerfile COPY fails if public/ directory doesn't exist",
+            "solution": "Use conditional copy: RUN mkdir -p ./public && (cp -r /app/public/* ./public/ 2>/dev/null || true)",
+            "prevention": "Create empty public/.gitkeep or handle missing directories gracefully in Dockerfile"
+          },
+          "buildContext": {
+            "issue": "Railway builds wrong directory (root vs web/)",
+            "solution": "Use separate railway.json files: root for backend, web/ for frontend",
+            "prevention": "Configure Railway service build context explicitly in dashboard or railway.json"
+          }
+        },
+        "templatablePattern": {
+          "structure": {
+            "monorepo": true,
+            "backend": { "path": "root", "builder": "DOCKERFILE", "config": "railway.json" },
+            "frontend": { "path": "web/", "builder": "NIXPACKS", "config": "web/railway.json" }
+          },
+          "dockerfiles": {
+            "backend": {
+              "location": "Dockerfile",
+              "pattern": "multi-stage-build",
+              "stages": ["builder", "production"],
+              "keyPoints": ["Copy package*.json first for layer caching", "Separate dev/prod dependencies"]
+            },
+            "frontend": {
+              "location": "web/Dockerfile",
+              "pattern": "multi-stage-build",
+              "stages": ["deps", "builder", "runner"],
+              "keyPoints": ["Use npm ci for reproducible builds", "Handle optional public/ directory", "Copy .next build output"]
+            }
+          },
+          "railwayConfig": {
+            "backend": {
+              "builder": "DOCKERFILE",
+              "dockerfilePath": "Dockerfile",
+              "startCommand": "node dist/server.js"
+            },
+            "frontend": {
+              "builder": "NIXPACKS",
+              "startCommand": "npm start",
+              "fallback": "DOCKERFILE if NIXPACKS fails"
+            }
+          },
+          "checklist": [
+            "package-lock.json matches package.json versions",
+            "public/ directory exists or Dockerfile handles missing gracefully",
+            "Railway service uses correct build context",
+            "Environment variables set per-service",
+            "Health endpoint responds: /api/health"
+          ]
+        }
       }
     },
     "dataFlow": {
