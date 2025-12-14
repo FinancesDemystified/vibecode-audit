@@ -158,66 +158,61 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-8 sm:pb-12">
-        <div className="text-center mb-12 sm:mb-16">
-          <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wider mb-4 sm:mb-6">Security Scanning</p>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-3 sm:mb-4">
+      <div className="max-w-6xl mx-auto px-2 sm:px-4 md:px-6 pt-6 sm:pt-12 md:pt-20 pb-4 sm:pb-8 md:pb-12">
+        <div className="text-center mb-6 sm:mb-12 md:mb-16">
+          <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 uppercase tracking-wider mb-2 sm:mb-4 md:mb-6">Security Scanning</p>
+          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-2 sm:mb-3 md:mb-4 leading-tight">
             Launch at
           </h1>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 md:mb-8 leading-tight">
             <span className="relative inline-block">
               Full Speed
-              <svg className="absolute -bottom-1 sm:-bottom-2 left-0 w-full" height="6" viewBox="0 0 300 8" fill="none">
+              <svg className="hidden sm:block absolute -bottom-1 md:-bottom-2 left-0 w-full" height="6" viewBox="0 0 300 8" fill="none">
                 <path d="M0 4C100 1 200 1 300 4" stroke="#3B82F6" strokeWidth="3"/>
               </svg>
             </span>
           </h1>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 sm:mb-12 px-4">
+          <p className="text-xs sm:text-base md:text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto mb-4 sm:mb-8 md:mb-12 px-2 sm:px-4 leading-snug sm:leading-normal">
             Building your MVP but unsure if it's secure? Get instant security analysis before you launch.
           </p>
         </div>
 
         {/* Scan Form */}
-        <div className="max-w-3xl mx-auto mb-12 sm:mb-20">
-          <form onSubmit={handleSubmit} className="bg-white border-2 border-gray-900 p-4 sm:p-6 rounded-xl shadow-lg">
-            <div className="flex flex-col sm:flex-row gap-3">
+        <div className="max-w-3xl mx-auto mb-6 sm:mb-12 md:mb-20">
+          <form onSubmit={handleSubmit} className="bg-white border-2 border-gray-900 p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl shadow-lg">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <input
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="your-app.com"
                 required
-                className="flex-1 px-4 sm:px-6 py-3 sm:py-4 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-base sm:text-lg"
+                className="flex-1 px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-sm sm:text-base md:text-lg"
                 disabled={loading}
               />
               <button
                 type="submit"
                 disabled={loading || !url}
-                className="px-6 sm:px-8 py-3 sm:py-4 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-base sm:text-lg min-h-[44px]"
+                className="px-4 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm sm:text-base md:text-lg min-h-[40px] sm:min-h-[44px]"
               >
                 {loading ? 'Scanning...' : 'Scan Now'}
               </button>
             </div>
-            <p className="text-xs sm:text-sm text-gray-500 mt-3">Free security scan • No credit card required</p>
+            <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 mt-2 sm:mt-3">Free security scan • No credit card required</p>
           </form>
         </div>
       </div>
 
       {/* Problem Statement */}
       {!report && !loading && (
-        <div className="bg-gray-50 py-12 sm:py-16 md:py-20">
-          <div className="max-w-4xl mx-auto px-4 text-center">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 leading-tight">
-              Building your MVP supercharges
-              <br className="hidden sm:block" />
-              <span className="sm:inline"> </span>productivity but also introduces
-              <br className="hidden sm:block" />
-              <span className="sm:inline"> </span><span className="text-red-600">Hidden Security Risks</span>
+        <div className="bg-gray-50 py-6 sm:py-12 md:py-16 lg:py-20">
+          <div className="max-w-4xl mx-auto px-3 sm:px-4 text-center">
+            <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold mb-3 sm:mb-4 md:mb-6 leading-tight">
+              Building your MVP supercharges productivity but also introduces
+              <span className="block sm:inline"> <span className="text-red-600">Hidden Security Risks</span></span>
             </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8">
-              Launching without knowing your vulnerabilities
-              <br className="hidden sm:block" />
-              <span className="sm:inline"> </span>Can Feel Unattainable
+            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 mb-4 sm:mb-6 md:mb-8 leading-snug">
+              Launching without knowing your vulnerabilities can feel unattainable
             </p>
           </div>
         </div>
@@ -225,8 +220,8 @@ export default function Home() {
 
       {/* Error */}
       {error && (
-        <div className="max-w-3xl mx-auto px-4 mb-6 sm:mb-8">
-          <div className="bg-red-50 border-2 border-red-600 text-red-800 px-4 sm:px-6 py-3 sm:py-4 rounded-xl text-sm sm:text-base">
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 mb-3 sm:mb-6 md:mb-8">
+          <div className="bg-red-50 border-2 border-red-600 text-red-800 px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 rounded-lg sm:rounded-xl text-xs sm:text-sm md:text-base">
             <span className="font-semibold">Error:</span> {error}
           </div>
         </div>
@@ -234,13 +229,13 @@ export default function Home() {
 
       {/* Status */}
       {jobId && status && !report && (
-        <div className="max-w-3xl mx-auto px-4 mb-6 sm:mb-8">
-          <div className="bg-white border-2 border-gray-900 p-6 sm:p-8 rounded-xl">
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-4 border-blue-600 border-t-transparent"></div>
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 mb-3 sm:mb-6 md:mb-8">
+          <div className="bg-white border-2 border-gray-900 p-4 sm:p-6 md:p-8 rounded-lg sm:rounded-xl">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+              <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 border-4 border-blue-600 border-t-transparent flex-shrink-0"></div>
               <div>
-                <h3 className="font-bold text-lg sm:text-xl capitalize">{status}</h3>
-                <p className="text-sm sm:text-base text-gray-600">Analyzing your application security...</p>
+                <h3 className="font-bold text-base sm:text-lg md:text-xl capitalize">{status}</h3>
+                <p className="text-xs sm:text-sm md:text-base text-gray-600">Analyzing your application security...</p>
               </div>
             </div>
           </div>
@@ -249,38 +244,38 @@ export default function Home() {
 
       {/* Report */}
       {report && (
-        <div className="max-w-5xl mx-auto px-4 pb-12 sm:pb-20">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 pb-6 sm:pb-12 md:pb-20">
           {/* Score - Always Visible */}
-          <div className="bg-black text-white p-6 sm:p-8 md:p-12 rounded-xl mb-6 sm:mb-8">
-            <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between gap-4 sm:gap-0">
-              <div className="text-center sm:text-left">
-                <p className="text-xs sm:text-sm uppercase tracking-wider text-gray-400 mb-2">Security Score</p>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">Your App's Security Rating</h2>
+          <div className="bg-black text-white p-4 sm:p-6 md:p-8 lg:p-12 rounded-lg sm:rounded-xl mb-3 sm:mb-6 md:mb-8">
+            <div className="flex flex-row items-center justify-between gap-3 sm:gap-4">
+              <div className="text-left">
+                <p className="text-[10px] sm:text-xs md:text-sm uppercase tracking-wider text-gray-400 mb-1 sm:mb-2">Security Score</p>
+                <h2 className="text-sm sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold leading-tight">Your App's Security Rating</h2>
               </div>
-              <div className="text-6xl sm:text-7xl md:text-8xl font-bold">
-                {report.score || 0}<span className="text-3xl sm:text-4xl text-gray-400">/10</span>
+              <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold flex-shrink-0">
+                {report.score || 0}<span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-400">/10</span>
               </div>
             </div>
           </div>
 
           {/* Critical Issues - Always Visible */}
           {criticalFindings.length > 0 && (
-            <div className="bg-white border-2 border-red-600 p-6 sm:p-8 rounded-xl mb-6 sm:mb-8">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-6">
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold">Critical Vulnerabilities Detected</h3>
-                <span className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm sm:text-base whitespace-nowrap">
+            <div className="bg-white border-2 border-red-600 p-3 sm:p-4 md:p-6 lg:p-8 rounded-lg sm:rounded-xl mb-3 sm:mb-6 md:mb-8">
+              <div className="flex flex-row items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4 md:mb-6">
+                <h3 className="text-sm sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-bold leading-tight">Critical Vulnerabilities</h3>
+                <span className="px-2 sm:px-3 md:px-4 py-1 sm:py-2 bg-red-600 text-white rounded text-[10px] sm:text-xs md:text-sm lg:text-base font-bold whitespace-nowrap flex-shrink-0">
                   {criticalFindings.length} Critical
                 </span>
               </div>
-              <div className="space-y-3 sm:space-y-4">
+              <div className="space-y-2 sm:space-y-3 md:space-y-4">
                 {criticalFindings.map((f, i) => (
-                  <div key={i} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-red-50 rounded-lg">
-                    <span className="text-2xl sm:text-3xl">🚨</span>
+                  <div key={i} className="flex items-start gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 bg-red-50 rounded">
+                    <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl flex-shrink-0">🚨</span>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-base sm:text-lg mb-1 break-words">
+                      <h4 className="font-bold text-xs sm:text-sm md:text-base lg:text-lg mb-0.5 sm:mb-1 break-words leading-tight">
                         {f.title || f.description || 'Security Vulnerability'}
                       </h4>
-                      <p className="text-red-700 font-semibold uppercase text-xs sm:text-sm">
+                      <p className="text-red-700 font-semibold uppercase text-[9px] sm:text-[10px] md:text-xs lg:text-sm">
                         {f.severity} SEVERITY
                       </p>
                     </div>
@@ -292,16 +287,16 @@ export default function Home() {
 
           {/* Tech Stack */}
           {report.techStack && (
-            <div className="bg-white border-2 border-gray-900 p-6 sm:p-8 rounded-xl mb-6 sm:mb-8">
-              <h3 className="text-xl sm:text-2xl font-bold mb-4">Detected Tech Stack</h3>
-              <div className="flex flex-wrap gap-2 sm:gap-3">
+            <div className="bg-white border-2 border-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 rounded-lg sm:rounded-xl mb-3 sm:mb-6 md:mb-8">
+              <h3 className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold mb-2 sm:mb-3 md:mb-4">Tech Stack</h3>
+              <div className="flex flex-wrap gap-1.5 sm:gap-2 md:gap-3">
                 {report.techStack.framework && (
-                  <span className="px-4 sm:px-5 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm sm:text-base">
+                  <span className="px-2 sm:px-3 md:px-4 lg:px-5 py-1 sm:py-1.5 md:py-2 bg-blue-600 text-white rounded text-[10px] sm:text-xs md:text-sm lg:text-base font-semibold">
                     {report.techStack.framework}
                   </span>
                 )}
                 {report.techStack.hosting && (
-                  <span className="px-4 sm:px-5 py-2 bg-gray-900 text-white rounded-lg font-semibold text-sm sm:text-base">
+                  <span className="px-2 sm:px-3 md:px-4 lg:px-5 py-1 sm:py-1.5 md:py-2 bg-gray-900 text-white rounded text-[10px] sm:text-xs md:text-sm lg:text-base font-semibold">
                     {report.techStack.hosting}
                   </span>
                 )}
@@ -311,39 +306,39 @@ export default function Home() {
 
           {/* Summary - Always Visible */}
           {report.summary && (
-            <div className="bg-white border-2 border-gray-900 p-6 sm:p-8 rounded-xl mb-6 sm:mb-8">
-              <h3 className="text-xl sm:text-2xl font-bold mb-4">Executive Summary</h3>
-              <p className="text-sm sm:text-base text-gray-700 leading-relaxed">{report.summary}</p>
+            <div className="bg-white border-2 border-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 rounded-lg sm:rounded-xl mb-3 sm:mb-6 md:mb-8">
+              <h3 className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold mb-2 sm:mb-3 md:mb-4">Executive Summary</h3>
+              <p className="text-xs sm:text-sm md:text-base text-gray-700 leading-snug sm:leading-relaxed">{report.summary}</p>
             </div>
           )}
 
           {/* All Findings List - Always Visible */}
           {report.findings && report.findings.length > 0 && (
-            <div className="bg-white border-2 border-gray-900 p-6 sm:p-8 rounded-xl mb-6 sm:mb-8">
-              <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">All Security Issues Detected ({report.findings.length})</h3>
-              <div className="space-y-3">
+            <div className="bg-white border-2 border-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 rounded-lg sm:rounded-xl mb-3 sm:mb-6 md:mb-8">
+              <h3 className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold mb-2 sm:mb-4 md:mb-6">All Issues ({report.findings.length})</h3>
+              <div className="space-y-1.5 sm:space-y-2 md:space-y-3">
                 {report.findings.map((f, i) => (
-                  <div key={i} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 border-2 border-gray-200 rounded-lg">
-                    <span className="text-xl sm:text-2xl flex-shrink-0">
+                  <div key={i} className="flex items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 border border-gray-200 rounded">
+                    <span className="text-base sm:text-lg md:text-xl lg:text-2xl flex-shrink-0">
                       {f.severity?.toLowerCase() === 'critical' ? '🔴' : 
                        f.severity?.toLowerCase() === 'high' ? '🟠' :
                        f.severity?.toLowerCase() === 'medium' ? '🟡' : '🟢'}
                     </span>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-base sm:text-lg break-words">
+                      <h4 className="font-bold text-xs sm:text-sm md:text-base lg:text-lg break-words leading-tight">
                         {f.title || f.description || 'Security Issue'}
                       </h4>
-                      <p className="text-xs sm:text-sm font-semibold uppercase text-gray-600">
+                      <p className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm font-semibold uppercase text-gray-600">
                         {f.severity || 'Unknown'} Severity
                       </p>
                     </div>
-                    <span className="text-gray-400 text-xl sm:text-2xl flex-shrink-0">🔒</span>
+                    <span className="text-gray-400 text-base sm:text-lg md:text-xl lg:text-2xl flex-shrink-0">🔒</span>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-yellow-50 border-2 border-yellow-600 rounded-lg">
-                <p className="text-center font-semibold text-yellow-900 text-sm sm:text-base">
-                  ⚠️ Detailed fixes and remediation steps are locked
+              <div className="mt-3 sm:mt-4 md:mt-6 p-2 sm:p-3 md:p-4 bg-yellow-50 border-2 border-yellow-600 rounded">
+                <p className="text-center font-semibold text-yellow-900 text-[10px] sm:text-xs md:text-sm lg:text-base leading-tight">
+                  ⚠️ Detailed fixes locked
                 </p>
               </div>
             </div>
