@@ -151,12 +151,29 @@ export async function performDeepSecurityAnalysis(
   });
 
   // Calculate overall score
-  const overallScore = calculateOverallScore({
-    securityCopy: securityCopy.aiAnalysis.accuracy * 0.25,
-    authTesting: (authTesting.rateLimiting.protected ? 25 : 0) + (authTesting.bruteForceProtection.protected ? 25 : 0) + (authTesting.sessionManagement.secureCookies ? 25 : 0) + (authTesting.passwordPolicy.enforced ? 25 : 0),
-    behavioral: (behavioral.csrfProtection.protected ? 33 : 0) + (!behavioral.xssProtection.vulnerable ? 33 : 0) + (!behavioral.inputValidation.vulnerable ? 34 : 0),
-    claimVerification: claimVerification.score,
-  });
+  // For static sites without auth, redistribute auth weight proportionally
+  const hasAuth = authTesting.rateLimiting.tested || 
+                  authTesting.bruteForceProtection.tested ||
+                  authTesting.sessionManagement.secureCookies;
+  
+  let overallScore: number;
+  if (!hasAuth) {
+    // Static site: redistribute 35% auth weight across other categories
+    overallScore = calculateOverallScore({
+      securityCopy: securityCopy.aiAnalysis.accuracy * 0.40, // 25% + 15% from auth
+      authTesting: 0,
+      behavioral: (behavioral.csrfProtection.protected ? 33 : 0) + (!behavioral.xssProtection.vulnerable ? 33 : 0) + (!behavioral.inputValidation.vulnerable ? 34 : 0) * 0.40, // 25% + 15% from auth
+      claimVerification: claimVerification.score * 0.20, // 15% + 5% from auth
+    });
+  } else {
+    // App with auth: use standard weighting
+    overallScore = calculateOverallScore({
+      securityCopy: securityCopy.aiAnalysis.accuracy * 0.25,
+      authTesting: (authTesting.rateLimiting.protected ? 25 : 0) + (authTesting.bruteForceProtection.protected ? 25 : 0) + (authTesting.sessionManagement.secureCookies ? 25 : 0) + (authTesting.passwordPolicy.enforced ? 25 : 0),
+      behavioral: (behavioral.csrfProtection.protected ? 33 : 0) + (!behavioral.xssProtection.vulnerable ? 33 : 0) + (!behavioral.inputValidation.vulnerable ? 34 : 0),
+      claimVerification: claimVerification.score,
+    });
+  }
 
   await eventBus.publish(jobId, {
     type: 'agent.completed',
