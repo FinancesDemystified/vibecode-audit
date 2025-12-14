@@ -11,6 +11,8 @@ import { discoverPostAuth } from '../scanner/post-auth-discoverer';
 import { performAuthenticatedScan } from '../scanner/authenticated-crawler';
 import { scanVulnerabilities } from '../analyzer/vulnerability';
 import { analyzeSEO } from '../analyzer/seo';
+import { copyAnalyzer } from '../analyzer/copy';
+import { performDeepSecurityAnalysis } from '../analyzer/deep-security';
 import { analyzeWithAI } from '../ai/groq';
 import { generateReport } from '../reporter/generator';
 import { eventBus } from '../communication';
@@ -65,6 +67,16 @@ export function createWorker(queueName: string = 'scan-queue') {
         const securityData = await extractSecurityData(crawlResult, eventBus, jobId);
         const postAuthData = await discoverPostAuth(url, securityData, crawlResult.html, eventBus, jobId);
         const seoData = await analyzeSEO(crawlResult, eventBus, jobId);
+        
+        // Copy analysis
+        await eventBus.publish(jobId, {
+          type: 'agent.progress',
+          agent: 'copy-analyzer',
+          jobId,
+          timestamp: Date.now(),
+          data: { status: 'analyzing copy' },
+        });
+        const copyAnalysis = await copyAnalyzer.analyzeCopy(crawlResult.html, url);
 
         // If credentials provided, perform authenticated scan
         let authenticatedScan = null;
@@ -82,6 +94,24 @@ export function createWorker(queueName: string = 'scan-queue') {
         await updateJobStatus(jobId, 'analyzing');
 
         const findings = await scanVulnerabilities(securityData, eventBus, jobId);
+        
+        // Deep security analysis - behavioral testing & security copy analysis
+        await eventBus.publish(jobId, {
+          type: 'agent.progress',
+          agent: 'deep-security-analyzer',
+          jobId,
+          timestamp: Date.now(),
+          data: { status: 'performing deep security analysis' },
+        });
+        const deepSecurityAnalysis = await performDeepSecurityAnalysis(
+          url,
+          crawlResult,
+          securityData,
+          credentials,
+          eventBus,
+          jobId
+        );
+        
         const analysis = await analyzeWithAI(findings, securityData, eventBus, jobId);
 
         await updateJobStatus(jobId, 'generating');
@@ -146,6 +176,15 @@ export function createWorker(queueName: string = 'scan-queue') {
             },
             aiOptimization: seoData.aiOptimization,
             issues: seoData.issues,
+          },
+          copyAnalysis,
+          deepSecurity: {
+            securityCopyAnalysis: deepSecurityAnalysis.securityCopyAnalysis,
+            authenticationTesting: deepSecurityAnalysis.authenticationTesting,
+            behavioralTests: deepSecurityAnalysis.behavioralTests,
+            claimVerification: deepSecurityAnalysis.claimVerification,
+            recommendations: deepSecurityAnalysis.recommendations,
+            overallScore: deepSecurityAnalysis.overallScore,
           },
           metadata: {
             version: '1.0.0',

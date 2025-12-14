@@ -10,6 +10,7 @@ interface CopyAnalysisResult {
   conversion: ConversionMetrics;
   brandVoice: BrandVoiceMetrics;
   seoReadiness: SEOMetrics;
+  securityCopy?: SecurityCopyMetrics;
   recommendations: Recommendation[];
   detailedFindings: DetailedFinding[];
 }
@@ -55,6 +56,19 @@ interface SEOMetrics {
   keywordDensity: number;
   headlineOptimization: number;
   metaDescription: { present: boolean; quality: number };
+}
+
+interface SecurityCopyMetrics {
+  score: number;
+  privacyPolicyFound: boolean;
+  securityPageFound: boolean;
+  trustSignals: {
+    badges: number;
+    certifications: number;
+    guarantees: number;
+  };
+  securityClaims: string[];
+  gaps: string[];
 }
 
 interface CTAAnalysis {
@@ -150,6 +164,7 @@ export class CopyAnalyzer {
       conversion,
       brandVoice,
       seoReadiness: seo,
+      securityCopy,
       recommendations,
       detailedFindings,
     };
@@ -848,6 +863,97 @@ export class CopyAnalyzer {
   private calculateOverallScore(scores: { [key: string]: number }): number {
     const total = Object.values(scores).reduce((sum, score) => sum + score, 0);
     return Math.round(total);
+  }
+
+  /**
+   * Security Copy Analysis - Privacy policies, security claims, trust signals
+   */
+  private async analyzeSecurityCopy(
+    copy: ExtractedCopy,
+    html: string,
+    url: string
+  ): Promise<SecurityCopyMetrics> {
+    const htmlLower = html.toLowerCase();
+    const allText = copy.allText.toLowerCase();
+
+    // Check for privacy policy links
+    const privacyPolicyFound = 
+      htmlLower.includes('privacy') || 
+      htmlLower.includes('privacy policy') ||
+      /href=["'][^"']*privacy[^"']*["']/i.test(html);
+
+    // Check for security page
+    const securityPageFound = 
+      htmlLower.includes('security') ||
+      htmlLower.includes('/security') ||
+      /href=["'][^"']*security[^"']*["']/i.test(html);
+
+    // Detect trust signals
+    const badges = [
+      htmlLower.includes('ssl') || htmlLower.includes('secure') ? 1 : 0,
+      htmlLower.includes('trustpilot') || htmlLower.includes('trust badge') ? 1 : 0,
+      htmlLower.includes('norton') || htmlLower.includes('mcafee') ? 1 : 0,
+    ].reduce((sum, val) => sum + val, 0);
+
+    const certifications = [
+      htmlLower.includes('soc 2') || htmlLower.includes('iso 27001') ? 1 : 0,
+      htmlLower.includes('pci-dss') || htmlLower.includes('pci compliant') ? 1 : 0,
+      htmlLower.includes('gdpr') || htmlLower.includes('ccpa') ? 1 : 0,
+    ].reduce((sum, val) => sum + val, 0);
+
+    const guarantees = [
+      htmlLower.includes('money-back') || htmlLower.includes('guarantee') ? 1 : 0,
+      htmlLower.includes('refund') ? 1 : 0,
+    ].reduce((sum, val) => sum + val, 0);
+
+    // Extract security claims
+    const securityClaims: string[] = [];
+    if (allText.includes('encrypt') || allText.includes('encrypted')) {
+      securityClaims.push('Data encryption');
+    }
+    if (allText.includes('2fa') || allText.includes('two-factor')) {
+      securityClaims.push('2FA available');
+    }
+    if (allText.includes('secure') || allText.includes('protected')) {
+      securityClaims.push('Security measures');
+    }
+    if (allText.includes('gdpr') || allText.includes('compliant')) {
+      securityClaims.push('GDPR compliance');
+    }
+
+    // Identify gaps
+    const gaps: string[] = [];
+    if (!privacyPolicyFound) {
+      gaps.push('Privacy policy not found or not linked');
+    }
+    if (!securityPageFound && securityClaims.length > 0) {
+      gaps.push('Security page missing despite security claims');
+    }
+    if (securityClaims.length > 0 && certifications === 0) {
+      gaps.push('Security claims made but no certifications mentioned');
+    }
+
+    // Calculate score
+    let score = 0;
+    if (privacyPolicyFound) score += 30;
+    if (securityPageFound) score += 20;
+    score += badges * 10;
+    score += certifications * 15;
+    score += guarantees * 10;
+    score -= gaps.length * 10;
+
+    return {
+      score: Math.max(0, Math.min(100, score)),
+      privacyPolicyFound,
+      securityPageFound,
+      trustSignals: {
+        badges,
+        certifications,
+        guarantees,
+      },
+      securityClaims,
+      gaps,
+    };
   }
 }
 
