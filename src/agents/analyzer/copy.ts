@@ -125,12 +125,13 @@ export class CopyAnalyzer {
     const extractedCopy = this.extractCopyElements(htmlContent);
     
     // Run parallel analyses
-    const [clarity, persuasion, conversion, brandVoice, seo] = await Promise.all([
+    const [clarity, persuasion, conversion, brandVoice, seo, securityCopy] = await Promise.all([
       this.analyzeClarity(extractedCopy),
       this.analyzePersuasion(extractedCopy),
       this.analyzeConversion(extractedCopy),
       this.analyzeBrandVoice(extractedCopy),
       this.analyzeSEO(extractedCopy, htmlContent),
+      this.analyzeSecurityCopy(extractedCopy, htmlContent, url),
     ]);
 
     // Generate recommendations

@@ -123,9 +123,9 @@ export async function performDeepSecurityAnalysis(
   baseUrl: string,
   crawlResult: CrawlResult,
   securityData: SecurityData,
-  credentials?: { username?: string; password?: string; email?: string },
   eventBus: EventBus,
-  jobId: string
+  jobId: string,
+  credentials?: { username?: string; password?: string; email?: string }
 ): Promise<DeepSecurityAnalysis> {
   await eventBus.publish(jobId, {
     type: 'agent.started',
@@ -137,7 +137,7 @@ export async function performDeepSecurityAnalysis(
   // Run parallel analyses
   const [securityCopy, authTesting, behavioral, claimVerification] = await Promise.all([
     analyzeSecurityCopy(baseUrl, crawlResult, securityData, eventBus, jobId),
-    testAuthentication(baseUrl, securityData, credentials, eventBus, jobId),
+    testAuthentication(baseUrl, securityData, eventBus, jobId, credentials),
     performBehavioralTests(baseUrl, crawlResult, securityData, eventBus, jobId),
     verifySecurityClaims(baseUrl, crawlResult, securityData, eventBus, jobId),
   ]);
@@ -154,7 +154,7 @@ export async function performDeepSecurityAnalysis(
   const overallScore = calculateOverallScore({
     securityCopy: securityCopy.aiAnalysis.accuracy * 0.25,
     authTesting: (authTesting.rateLimiting.protected ? 25 : 0) + (authTesting.bruteForceProtection.protected ? 25 : 0) + (authTesting.sessionManagement.secureCookies ? 25 : 0) + (authTesting.passwordPolicy.enforced ? 25 : 0),
-    behavioral: (behavioral.csrfProtection.protected ? 33 : 0) + (behavioral.xssProtection.protected ? 33 : 0) + (!behavioral.inputValidation.vulnerable ? 34 : 0),
+    behavioral: (behavioral.csrfProtection.protected ? 33 : 0) + (!behavioral.xssProtection.vulnerable ? 33 : 0) + (!behavioral.inputValidation.vulnerable ? 34 : 0),
     claimVerification: claimVerification.score,
   });
 
@@ -326,9 +326,9 @@ async function analyzeSecurityCopy(
 async function testAuthentication(
   baseUrl: string,
   securityData: SecurityData,
-  credentials?: { username?: string; password?: string; email?: string },
   eventBus: EventBus,
-  jobId: string
+  jobId: string,
+  credentials?: { username?: string; password?: string; email?: string }
 ): Promise<AuthenticationTesting> {
   await eventBus.publish(jobId, {
     type: 'agent.progress',
@@ -455,7 +455,7 @@ async function testAuthentication(
         body: formData.toString(),
       });
       
-      const text = await response.text().toLowerCase();
+      const text = (await response.text()).toLowerCase();
       if (text.includes('password') && (text.includes('short') || text.includes('length') || text.includes('minimum'))) {
         passwordPolicyEnforced = true;
         const lengthMatch = text.match(/(\d+)\s*(?:character|char)/);
@@ -487,11 +487,11 @@ async function testAuthentication(
         body: formData1.toString(),
       });
       
-      const text1 = await response1.text().toLowerCase();
+      const text1 = (await response1.text()).toLowerCase();
       
       // Test with wrong password (user exists)
       const formData2 = new URLSearchParams();
-      if (credentials.email) formData2.append('email', credentials.email);
+      if (credentials?.email) formData2.append('email', credentials.email);
       formData2.append('password', 'wrongpassword');
       
       const response2 = await fetch(loginUrl, {
@@ -500,7 +500,7 @@ async function testAuthentication(
         body: formData2.toString(),
       });
       
-      const text2 = await response2.text().toLowerCase();
+      const text2 = (await response2.text()).toLowerCase();
       
       // Compare error messages
       if (text1 !== text2) {
@@ -636,7 +636,7 @@ async function performBehavioralTests(
           body: formData.toString(),
         });
         
-        const text = await response.text().toLowerCase();
+        const text = (await response.text()).toLowerCase();
         if (text.includes('sql') || text.includes('database') || text.includes('mysql') || text.includes('postgres')) {
           inputVulnerable = true;
           inputEvidence.push(`SQL injection possible in ${form.action}`);

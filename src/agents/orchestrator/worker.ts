@@ -74,7 +74,8 @@ export function createWorker(queueName: string = 'scan-queue') {
           agent: 'copy-analyzer',
           jobId,
           timestamp: Date.now(),
-          data: { status: 'analyzing copy' },
+          progress: 50,
+          message: 'Analyzing copy',
         });
         const copyAnalysis = await copyAnalyzer.analyzeCopy(crawlResult.html, url);
 
@@ -101,15 +102,16 @@ export function createWorker(queueName: string = 'scan-queue') {
           agent: 'deep-security-analyzer',
           jobId,
           timestamp: Date.now(),
-          data: { status: 'performing deep security analysis' },
+          progress: 60,
+          message: 'Performing deep security analysis',
         });
         const deepSecurityAnalysis = await performDeepSecurityAnalysis(
           url,
           crawlResult,
           securityData,
-          credentials,
           eventBus,
-          jobId
+          jobId,
+          credentials
         );
         
         const analysis = await analyzeWithAI(findings, securityData, eventBus, jobId);
