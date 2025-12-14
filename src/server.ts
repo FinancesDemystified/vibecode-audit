@@ -8,12 +8,15 @@ import cors from 'cors';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import { appRouter } from './router';
 import { rateLimitMiddleware } from './middleware/ratelimit';
+import { securityHeadersMiddleware } from './middleware/security';
 import { createWorker } from './agents';
 import { redis } from './lib/redis';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+app.disable('x-powered-by');
+app.use(securityHeadersMiddleware);
 app.use(cors());
 app.use(express.json());
 
