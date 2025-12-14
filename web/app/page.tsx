@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 
 interface ScanResponse {
   result?: { data?: { jobId?: string; status?: string } };
@@ -11,7 +12,12 @@ interface StatusResponse {
 }
 
 interface Finding {
-  severity?: string;
+  type?: string;
+  severity?: 'low' | 'medium' | 'high' | 'critical' | string;
+  evidence?: string;
+  cwe?: string;
+  recommendation?: string;
+  // Legacy fields for backwards compatibility
   title?: string;
   description?: string;
 }
@@ -35,6 +41,9 @@ export default function Home() {
   const [unlocked, setUnlocked] = useState(false);
   const [email, setEmail] = useState('');
   const [currentTab, setCurrentTab] = useState<'scan' | 'results' | 'details'>('scan');
+  const [expandedIssues, setExpandedIssues] = useState<Set<number>>(new Set());
+  const [showAllIssues, setShowAllIssues] = useState(false);
+  const [selectedSeverity, setSelectedSeverity] = useState<string | null>(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vibecode-audit-production.up.railway.app';
 
@@ -153,12 +162,69 @@ export default function Home() {
     f.severity?.toLowerCase() === 'critical' || f.severity?.toLowerCase() === 'high'
   ).slice(0, 3) || [];
 
+  // Get the actual issue title/name from backend
+  const getIssueTitle = (finding: Finding) => {
+    // Backend sends 'type' as the primary identifier
+    if (finding.type) return finding.type;
+    // Fallback to legacy 'title' field
+    if (finding.title) return finding.title;
+    return 'Security Issue';
+  };
+
+  // Get the actual description/evidence from backend
+  const getIssueDescription = (finding: Finding) => {
+    // Backend sends 'evidence' - this is the actual proof/description from the scan
+    if (finding.evidence && finding.evidence.trim().length > 0) {
+      return finding.evidence;
+    }
+    // Fallback to legacy 'description' field
+    if (finding.description && finding.description.trim().length > 0) {
+      return finding.description;
+    }
+    // Last resort fallback
+    return `This ${finding.severity || 'security'} issue was detected in your application.`;
+  };
+
+  // Get the actual recommendation from backend
+  const getIssueRecommendation = (finding: Finding) => {
+    // Backend sends 'recommendation' - this is the actual fix instruction
+    if (finding.recommendation && finding.recommendation.trim().length > 0) {
+      return finding.recommendation;
+    }
+    // Fallback for when recommendation is missing
+    return `Implement proper security measures to address this ${finding.severity || 'security'} issue. Check your platform documentation for specific steps.`;
+  };
+
+  // Get impact based on severity
+  const getIssueImpact = (finding: Finding) => {
+    const severity = finding.severity?.toLowerCase();
+    if (severity === 'critical') {
+      return 'This could expose user data, lead to legal issues, or shut down your app. Fix this immediately before launching.';
+    }
+    if (severity === 'high') {
+      return 'This could cause data leaks, unexpected costs, or security breaches. Fix this before launching to real users.';
+    }
+    if (severity === 'medium') {
+      return 'This could cause problems if exploited. Fix this soon to keep your app secure.';
+    }
+    return 'This is a minor issue, but fixing it will improve your app\'s security.';
+  };
+
   return (
     <div className="min-h-screen bg-white">
+      {/* Top Banner */}
+      <div className="bg-red-50 border-b border-red-100">
+        <div className="max-w-4xl mx-auto px-4 py-3 text-center">
+          <p className="text-sm text-gray-800">
+            Get detailed security audit of your web app (<span className="font-bold text-red-600">free!</span>)
+          </p>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <h1 className="text-xl font-bold">VibeCode Security Audit</h1>
+          <h1 className="text-xl font-bold text-gray-900">VibeCode Security Audit</h1>
         </div>
       </div>
 
@@ -181,7 +247,7 @@ export default function Home() {
                 onClick={() => setCurrentTab('results')}
                 className={`py-4 px-2 border-b-2 font-semibold text-sm transition-colors ${
                   currentTab === 'results'
-                    ? 'border-blue-600 text-blue-600'
+                    ? 'border-red-600 text-red-600'
                     : 'border-transparent text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -210,67 +276,356 @@ export default function Home() {
           <div className="max-w-2xl mx-auto">
             {!loading && !report && (
               <>
-                <div className="text-center mb-12">
-                  <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                    Get instant security analysis
-                  </h2>
-                  <p className="text-lg text-gray-600">
-                    Scan your web app for vulnerabilities before launch
-                  </p>
+                {/* Hero Section with Animated Steps */}
+                <div className="text-center mb-20">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    <h1 className="text-4xl md:text-6xl font-bold mb-6 text-gray-900">
+                      Your app works. But is it<br />actually ready to launch?
+                    </h1>
+                    <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
+                      You built it with AI. It looks great. Everything works. But if you haven't checked for security problems, 
+                      you might be launching something that could break, leak data, or cost you thousands.
+                    </p>
+                  </motion.div>
+                  
+                  {/* Scan Form */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                    className="max-w-lg mx-auto mb-16"
+                  >
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div className="flex gap-3">
+                        <input
+                          type="text"
+                          value={url}
+                          onChange={(e) => setUrl(e.target.value)}
+                          placeholder="your-app.com"
+                          required
+                          className="flex-1 px-6 py-4 border-2 border-gray-300 rounded-xl focus:border-red-500 focus:outline-none text-base shadow-sm"
+                        />
+                        <button
+                          type="submit"
+                          disabled={!url}
+                          className="px-8 py-4 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg transition-colors shadow-lg"
+                        >
+                          Scan Now
+                        </button>
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        Free • No credit card • Results in minutes
+                      </p>
+                    </form>
+                  </motion.div>
+
+                  {/* Animated How It Works Steps */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.6, delay: 0.4 }}
+                  >
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-8">
+                      How it works
+                    </h3>
+                    <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                      {[
+                        {
+                          icon: (
+                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                          ),
+                          title: 'Enter URL',
+                          description: 'Submit your website and start scanning',
+                          delay: 0.5
+                        },
+                        {
+                          icon: (
+                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                          ),
+                          title: 'AI Analysis',
+                          description: 'We scan for security problems in minutes',
+                          delay: 0.7
+                        },
+                        {
+                          icon: (
+                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                          ),
+                          title: 'Get Report',
+                          description: 'See findings with step-by-step fixes',
+                          delay: 0.9
+                        }
+                      ].map((step, index) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, y: 30 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ 
+                            duration: 0.5, 
+                            delay: step.delay,
+                            type: "spring",
+                            stiffness: 100
+                          }}
+                          whileHover={{ scale: 1.05, y: -5 }}
+                          className="relative"
+                        >
+                          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
+                            <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-white shadow-lg">
+                              {step.icon}
+                            </div>
+                            <h4 className="font-semibold text-gray-900 mb-2">{step.title}</h4>
+                            <p className="text-sm text-gray-600">{step.description}</p>
+                            {index < 2 && (
+                              <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2">
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ delay: step.delay + 0.3, type: "spring" }}
+                                  className="w-8 h-0.5 bg-gradient-to-r from-red-400 to-orange-400"
+                                />
+                                <motion.div
+                                  initial={{ x: -10, opacity: 0 }}
+                                  animate={{ x: 0, opacity: 1 }}
+                                  transition={{ delay: step.delay + 0.5 }}
+                                  className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2"
+                                >
+                                  <svg className="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                                  </svg>
+                                </motion.div>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
                 </div>
 
-                <div className="bg-white border-2 border-gray-900 rounded-xl p-8 shadow-sm">
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Website URL
-                      </label>
-                      <input
-                        type="text"
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                        placeholder="example.com"
-                        required
-                        className="w-full px-4 py-4 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-base"
-                      />
+                {/* Landing Page Content */}
+                <div className="mt-24 space-y-24">
+                  {/* The 90% vs 20% Reality */}
+                  <div className="text-center">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                      You think you're 90% done. Here's the reality:
+                    </h2>
+                    <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
+                      Research shows <span className="font-semibold text-red-600">40%+ of AI-built apps leak user data</span>—names, emails, phone numbers. 
+                      <span className="font-semibold"> 1 in 3 has critical security holes</span> that hackers can exploit in minutes.
+                    </p>
+                    <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mt-12">
+                      <div className="bg-red-50 rounded-2xl p-6">
+                        <div className="text-5xl font-bold text-red-600 mb-2">40%+</div>
+                        <p className="text-gray-700 font-medium">leak sensitive user data</p>
+                        <p className="text-sm text-gray-600 mt-2">Without you knowing</p>
+                      </div>
+                      <div className="bg-red-50 rounded-2xl p-6">
+                        <div className="text-5xl font-bold text-red-600 mb-2">1 in 3</div>
+                        <p className="text-gray-700 font-medium">has critical security problems</p>
+                        <p className="text-sm text-gray-600 mt-2">That could shut you down</p>
+                      </div>
+                      <div className="bg-red-50 rounded-2xl p-6">
+                        <div className="text-5xl font-bold text-red-600 mb-2">$300+</div>
+                        <p className="text-gray-700 font-medium">typical cost from one leak</p>
+                        <p className="text-sm text-gray-600 mt-2">Before you even launch</p>
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Problem Section */}
+                  <div className="max-w-3xl mx-auto">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                      AI optimizes for "working," not "secure"
+                    </h2>
+                    <div className="space-y-4 text-lg text-gray-700 leading-relaxed">
+                      <p>
+                        You built your app with AI. It works. You're ready to launch.
+                      </p>
+                      <p>
+                        But research from analyzing <span className="font-semibold text-red-600">2,000+ vulnerable apps</span> shows that 
+                        <span className="font-semibold"> 40%+ leak sensitive data</span>—names, emails, phone numbers, financials. 
+                        <span className="font-semibold"> 20% allow unrestricted database access</span> where anyone can view, create, edit, or delete records.
+                      </p>
+                      <p>
+                        When Row Level Security (RLS) breaks features, AI "fixes" by disabling protection. When authentication is complex, 
+                        AI suggests workarounds that expose your data. When secrets are needed, AI puts them in frontend builds where anyone can see them.
+                      </p>
+                      <p>
+                        You don't need to become a security expert. You just need to find vulnerabilities before hackers do.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* What We Find */}
+                  <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-3xl p-12">
+                    <div className="max-w-3xl mx-auto">
+                      <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                        What we check that you probably haven't
+                      </h2>
+                      <p className="text-lg text-gray-700 mb-8">
+                        These are the things non-technical founders don't know to check—but hackers know to look for.
+                      </p>
+                      <div className="grid md:grid-cols-2 gap-6 text-gray-700">
+                        <div className="space-y-4">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                              <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 mb-1">Data Leakage</p>
+                              <p className="text-sm">Public databases, missing RLS, anonymous access</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                              <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 mb-1">Exposed Secrets</p>
+                              <p className="text-sm">API keys in frontend, .env files in production</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                              <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 mb-1">Auth Bypasses</p>
+                              <p className="text-sm">Weak authentication, exposed admin panels</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                              <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 mb-1">Missing Validation</p>
+                              <p className="text-sm">No CSRF, XSS protection, input sanitization</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                              <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 mb-1">CORS Issues</p>
+                              <p className="text-sm">APIs accepting requests from any origin</p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                              <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900 mb-1">Architecture Gaps</p>
+                              <p className="text-sm">Client-side logic, schema exposure</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* How It Works - Detailed */}
+                  <div className="max-w-3xl mx-auto">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                      We check everything you don't know to check
+                    </h2>
+                    <div className="space-y-4 text-lg text-gray-700 leading-relaxed">
+                      <p>
+                        You don't need to understand authentication flows or database security. We do. Our scanner checks everything 
+                        in minutes: Can anyone access your database without logging in? Are your API keys visible in the frontend? 
+                        Can users see other users' data? Is your admin panel protected?
+                      </p>
+                      <p>
+                        Every issue we find comes with <span className="font-semibold">plain English explanations</span> and 
+                        <span className="font-semibold"> step-by-step fixes</span> you can follow—even if you've never written code.
+                      </p>
+                      <p>
+                        We know the specific security problems each AI builder creates. Lovable leaves databases wide open. 
+                        Bolt exposes secrets. Replit bypasses security checks. We check for all of them.
+                      </p>
+                      <p className="font-semibold text-gray-900 mt-6">
+                        The question isn't whether your app has problems. The question is: do you want to find them before they find you?
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* The Cost of Waiting */}
+                  <div className="bg-gradient-to-br from-red-600 to-red-700 text-white rounded-3xl p-12">
+                    <div className="max-w-3xl mx-auto text-center">
+                      <h2 className="text-3xl font-bold mb-6">
+                        The cost of waiting
+                      </h2>
+                      <div className="space-y-4 text-lg text-red-50 leading-relaxed">
+                        <p>
+                          Unchecked security problems lead to data leaks, <span className="font-semibold">$300+ bills from exposed API keys</span>, 
+                          database breaches, regulatory violations, and reputation damage.
+                        </p>
+                        <p>
+                          <span className="font-semibold">2,000+ vulnerable apps</span> have been identified in recent research. 
+                          Platforms like Lovable, Bolt, Replit, and Cursor all have documented security issues.
+                        </p>
+                        <p>
+                          Most founders spend $10K-$50K learning this the hard way after a security incident. 
+                          You can verify security for free, before you launch.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Final CTA */}
+                  <div className="text-center max-w-2xl mx-auto">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                      Find out what could go wrong before you launch
+                    </h2>
+                    <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+                      You built something amazing. Don't let security problems you didn't know existed ruin your launch. 
+                      Get a free security check. See exactly what needs fixing. Get step-by-step instructions to fix it.
+                    </p>
+                    <p className="text-base text-gray-500 mb-8">
+                      No technical knowledge required. No credit card. Just enter your URL and get your report in minutes.
+                    </p>
                     <button
-                      type="submit"
-                      disabled={!url}
-                      className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg transition-colors"
+                      onClick={() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        setTimeout(() => {
+                          const urlInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+                          if (urlInput) {
+                            urlInput.focus();
+                          }
+                        }, 500);
+                      }}
+                      className="px-8 py-4 bg-red-600 text-white rounded-xl hover:bg-red-700 font-semibold text-lg transition-colors shadow-lg"
                     >
-                      Start Security Scan
+                      Check My App Now →
                     </button>
-                  </form>
-                  <p className="text-sm text-gray-500 text-center mt-4">
-                    Free scan • No credit card required
-                  </p>
-                </div>
-
-                <div className="mt-12 p-6 bg-blue-50 rounded-xl border border-blue-200">
-                  <h3 className="font-semibold mb-4 flex items-center gap-2">
-                    <span className="text-2xl">🔒</span>
-                    <span>How it works</span>
-                  </h3>
-                  <div className="space-y-3">
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                        1
-                      </div>
-                      <p className="text-sm text-gray-700">Enter your website URL</p>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                        2
-                      </div>
-                      <p className="text-sm text-gray-700">AI scans for security vulnerabilities</p>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                        3
-                      </div>
-                      <p className="text-sm text-gray-700">Get detailed security report</p>
-                    </div>
+                    <p className="text-sm text-gray-500 mt-4">
+                      100% free • No credit card • Results in minutes
+                    </p>
                   </div>
                 </div>
               </>
@@ -278,7 +633,7 @@ export default function Home() {
 
             {loading && (
               <div className="bg-white border-2 border-gray-900 rounded-xl p-12 text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mb-6"></div>
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-red-600 border-t-transparent mb-6"></div>
                 <h3 className="text-xl font-bold capitalize mb-2">{status}</h3>
                 <p className="text-gray-600">Analyzing your application security...</p>
               </div>
@@ -294,16 +649,25 @@ export default function Home() {
 
         {/* Results Tab */}
         {currentTab === 'results' && report && (
-          <div className="space-y-6">
-            {/* Score Card */}
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-xl p-8 shadow-lg">
+          <div className="space-y-8 max-w-4xl mx-auto">
+            {/* Score Card - Compact */}
+            <div className="bg-gradient-to-br from-red-600 to-red-700 text-white rounded-xl p-6 shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm uppercase tracking-wider opacity-90 mb-1">Security Score</p>
-                  <h2 className="text-2xl font-bold">Your App Rating</h2>
+                  <p className="text-xs uppercase tracking-wider opacity-90 mb-1">Security Score</p>
+                  <div className="text-4xl font-bold">
+                    {report.score || 0}<span className="text-2xl opacity-75">/10</span>
+                  </div>
                 </div>
-                <div className="text-6xl font-bold">
-                  {report.score || 0}<span className="text-3xl opacity-75">/10</span>
+                <div className="flex gap-6">
+                  <div className="text-center">
+                    <div className="text-xl font-bold">{report.findings?.length || 0}</div>
+                    <div className="text-xs opacity-90">Issues</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold">{criticalFindings.length}</div>
+                    <div className="text-xs opacity-90">Critical</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -323,7 +687,7 @@ export default function Home() {
                 <div className="space-y-3">
                   {criticalFindings.map((f, i) => (
                     <div key={i} className="p-4 bg-red-50 rounded-lg">
-                      <h4 className="font-semibold mb-1">{f.title || f.description || 'Security Vulnerability'}</h4>
+                      <h4 className="font-semibold mb-1">{getIssueTitle(f)}</h4>
                       <p className="text-sm text-red-700 uppercase font-semibold">{f.severity} SEVERITY</p>
                     </div>
                   ))}
@@ -331,18 +695,115 @@ export default function Home() {
               </div>
             )}
 
-            {/* Tech Stack */}
+            {/* All Issues - Always Expanded with Filters */}
+            {report.findings && report.findings.length > 0 && (
+              <div className="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    All Issues ({report.findings.length})
+                  </h3>
+                </div>
+
+                {/* Severity Filter */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <button
+                    onClick={() => setSelectedSeverity(null)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      selectedSeverity === null
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {['critical', 'high', 'medium', 'low'].map((sev) => {
+                    const count = report.findings!.filter(f => f.severity?.toLowerCase() === sev).length;
+                    if (count === 0) return null;
+                    return (
+                      <button
+                        key={sev}
+                        onClick={() => setSelectedSeverity(sev)}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
+                          selectedSeverity === sev
+                            ? sev === 'critical' ? 'bg-red-600 text-white' :
+                              sev === 'high' ? 'bg-orange-600 text-white' :
+                              sev === 'medium' ? 'bg-yellow-500 text-white' :
+                              'bg-green-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {sev} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="space-y-3">
+                  {report.findings
+                    .filter(f => !selectedSeverity || f.severity?.toLowerCase() === selectedSeverity)
+                    .map((f, i) => {
+                      const severityColor = f.severity?.toLowerCase() === 'critical' ? 'red' :
+                        f.severity?.toLowerCase() === 'high' ? 'orange' :
+                        f.severity?.toLowerCase() === 'medium' ? 'yellow' : 'green';
+                      
+                      return (
+                        <div key={i} className={`border-2 rounded-lg p-4 ${
+                          severityColor === 'red' ? 'border-red-200 bg-red-50' :
+                          severityColor === 'orange' ? 'border-orange-200 bg-orange-50' :
+                          severityColor === 'yellow' ? 'border-yellow-200 bg-yellow-50' :
+                          'border-green-200 bg-green-50'
+                        }`}>
+                          <div className="flex items-start gap-3">
+                            <div className={`flex-shrink-0 w-3 h-3 rounded-full mt-1.5 ${
+                              severityColor === 'red' ? 'bg-red-600' :
+                              severityColor === 'orange' ? 'bg-orange-600' :
+                              severityColor === 'yellow' ? 'bg-yellow-500' :
+                              'bg-green-600'
+                            }`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <h4 className="font-semibold text-gray-900">{getIssueTitle(f)}</h4>
+                                <span className={`text-xs px-2 py-0.5 rounded uppercase font-medium flex-shrink-0 ${
+                                  severityColor === 'red' ? 'bg-red-200 text-red-800' :
+                                  severityColor === 'orange' ? 'bg-orange-200 text-orange-800' :
+                                  severityColor === 'yellow' ? 'bg-yellow-200 text-yellow-800' :
+                                  'bg-green-200 text-green-800'
+                                }`}>
+                                  {f.severity || 'Unknown'}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-700 mb-3">{getIssueDescription(f)}</p>
+                              {f.recommendation && (
+                                <div className="pt-3 border-t border-gray-200">
+                                  <p className="text-xs font-semibold text-gray-600 mb-1">How to fix:</p>
+                                  <p className="text-sm text-gray-700">{getIssueRecommendation(f)}</p>
+                                </div>
+                              )}
+                              {f.cwe && (
+                                <p className="text-xs text-gray-500 mt-2">CWE: {f.cwe}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
+            {/* Tech Stack - Context */}
             {report.techStack && (
-              <div className="bg-white border-2 border-gray-900 rounded-xl p-6">
-                <h3 className="text-lg font-bold mb-3">Detected Technologies</h3>
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+                <h3 className="text-lg font-bold mb-3 text-gray-900">Detected Technologies</h3>
+                <p className="text-sm text-gray-600 mb-4">We detected these technologies in your app. Some security issues are specific to certain platforms.</p>
                 <div className="flex flex-wrap gap-2">
                   {report.techStack.framework && (
-                    <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold text-sm">
+                    <span className="px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-gray-700">
                       {report.techStack.framework}
                     </span>
                   )}
                   {report.techStack.hosting && (
-                    <span className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold text-sm">
+                    <span className="px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold text-sm text-gray-700">
                       {report.techStack.hosting}
                     </span>
                   )}
@@ -350,38 +811,20 @@ export default function Home() {
               </div>
             )}
 
-            {/* All Findings */}
-            {report.findings && report.findings.length > 0 && (
-              <div className="bg-white border-2 border-gray-900 rounded-xl p-6">
-                <h3 className="text-lg font-bold mb-4">
-                  All Issues Found ({report.findings.length})
-                </h3>
-                <div className="space-y-2">
-                  {report.findings.map((f, i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-blue-600 transition-colors">
-                      <span className="text-xl">
-                        {f.severity?.toLowerCase() === 'critical' ? '🔴' : 
-                         f.severity?.toLowerCase() === 'high' ? '🟠' :
-                         f.severity?.toLowerCase() === 'medium' ? '🟡' : '🟢'}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm truncate">{f.title || f.description || 'Security Issue'}</h4>
-                        <p className="text-xs text-gray-600 uppercase">{f.severity || 'Unknown'}</p>
-                      </div>
-                      <span className="text-gray-400 text-xl">🔒</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Unlock CTA */}
+            {/* Level 5: Unlock Detailed Fixes */}
             {showEmailGate && !unlocked && (
-              <div className="bg-yellow-50 border-2 border-yellow-600 rounded-xl p-8 text-center">
-                <span className="text-5xl mb-4 block">🔓</span>
-                <h3 className="text-2xl font-bold mb-2">Unlock Full Report</h3>
-                <p className="text-gray-700 mb-6">
-                  Get detailed fixes and step-by-step remediation for all {report.findings?.length || 0} vulnerabilities
+              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400 rounded-2xl p-8 text-center shadow-lg">
+                <div className="w-16 h-16 bg-yellow-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold mb-2 text-gray-900">Get Step-by-Step Fix Instructions</h3>
+                <p className="text-gray-700 mb-2 max-w-md mx-auto">
+                  You've seen what's wrong. Now get detailed, plain-English instructions on how to fix each problem.
+                </p>
+                <p className="text-sm text-gray-600 mb-6">
+                  We'll send you a complete remediation guide with platform-specific fixes for all {report.findings?.length || 0} issues.
                 </p>
                 <form onSubmit={handleEmailUnlock} className="max-w-md mx-auto">
                   <input
@@ -390,14 +833,15 @@ export default function Home() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="your@email.com"
                     required
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none mb-3"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-red-500 focus:outline-none mb-3 text-base"
                   />
                   <button
                     type="submit"
-                    className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
+                    className="w-full px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 font-semibold text-lg transition-colors shadow-lg"
                   >
-                    Get Free Full Report
+                    Get Free Fix Instructions →
                   </button>
+                  <p className="text-xs text-gray-500 mt-3">100% free • No spam • Unlock instantly</p>
                 </form>
               </div>
             )}
@@ -406,59 +850,70 @@ export default function Home() {
 
         {/* Details Tab */}
         {currentTab === 'details' && unlocked && report && (
-          <div className="space-y-6">
-            <div className="bg-green-50 border-2 border-green-600 rounded-xl p-6 text-center">
-              <span className="text-5xl mb-3 block">✅</span>
-              <h2 className="text-2xl font-bold">Report Unlocked!</h2>
-              <p className="text-gray-600">Detailed remediation instructions below</p>
-            </div>
-
+          <div className="space-y-6 max-w-4xl mx-auto">
             {report.summary && (
-              <div className="bg-white border-2 border-gray-900 rounded-xl p-6">
-                <h3 className="text-lg font-bold mb-3">Executive Summary</h3>
+              <div className="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-lg">
+                <h3 className="text-lg font-bold mb-3 text-gray-900">Summary</h3>
                 <p className="text-gray-700 leading-relaxed">{report.summary}</p>
               </div>
             )}
 
             {report.findings && report.findings.length > 0 && (
-              <div className="bg-white border-2 border-gray-900 rounded-xl p-6">
-                <h3 className="text-lg font-bold mb-6">Detailed Remediation Guide</h3>
-                <div className="space-y-6">
-                  {report.findings.map((f, i) => (
-                    <div key={i} className="p-5 border-2 border-gray-200 rounded-lg">
-                      <div className="flex items-start gap-3 mb-4">
-                        <span className="text-3xl">
-                          {f.severity?.toLowerCase() === 'critical' ? '🔴' : 
-                           f.severity?.toLowerCase() === 'high' ? '🟠' :
-                           f.severity?.toLowerCase() === 'medium' ? '🟡' : '🟢'}
-                        </span>
-                        <div>
-                          <h4 className="font-bold text-lg mb-1">{f.title || f.description || 'Security Issue'}</h4>
-                          <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold uppercase">
-                            {f.severity || 'Unknown'} Severity
-                          </span>
+              <div className="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-lg">
+                <h3 className="text-xl font-bold mb-4 text-gray-900">Fix Guide</h3>
+                <div className="space-y-4">
+                  {report.findings
+                    .sort((a, b) => {
+                      const order = { critical: 0, high: 1, medium: 2, low: 3 };
+                      return (order[a.severity?.toLowerCase() as keyof typeof order] ?? 99) - 
+                             (order[b.severity?.toLowerCase() as keyof typeof order] ?? 99);
+                    })
+                    .map((f, i) => {
+                      const severityColor = f.severity?.toLowerCase() === 'critical' ? 'red' :
+                        f.severity?.toLowerCase() === 'high' ? 'orange' :
+                        f.severity?.toLowerCase() === 'medium' ? 'yellow' : 'green';
+                      
+                      return (
+                        <div key={i} className={`border-2 rounded-lg p-4 ${
+                          severityColor === 'red' ? 'border-red-200 bg-red-50' :
+                          severityColor === 'orange' ? 'border-orange-200 bg-orange-50' :
+                          severityColor === 'yellow' ? 'border-yellow-200 bg-yellow-50' :
+                          'border-green-200 bg-green-50'
+                        }`}>
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className={`flex-shrink-0 w-3 h-3 rounded-full mt-1.5 ${
+                              severityColor === 'red' ? 'bg-red-600' :
+                              severityColor === 'orange' ? 'bg-orange-600' :
+                              severityColor === 'yellow' ? 'bg-yellow-500' :
+                              'bg-green-600'
+                            }`} />
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <h4 className="font-bold text-gray-900">{getIssueTitle(f)}</h4>
+                                <span className={`text-xs px-2 py-0.5 rounded uppercase font-medium flex-shrink-0 ${
+                                  severityColor === 'red' ? 'bg-red-200 text-red-800' :
+                                  severityColor === 'orange' ? 'bg-orange-200 text-orange-800' :
+                                  severityColor === 'yellow' ? 'bg-yellow-200 text-yellow-800' :
+                                  'bg-green-200 text-green-800'
+                                }`}>
+                                  {f.severity || 'Unknown'}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-700 mb-3">{getIssueDescription(f)}</p>
+                              {f.recommendation && (
+                                <div className="pt-3 border-t border-gray-200">
+                                  <p className="text-xs font-semibold text-gray-600 mb-1">How to fix:</p>
+                                  <p className="text-sm text-gray-700">{getIssueRecommendation(f)}</p>
+                                </div>
+                              )}
+                              {f.cwe && (
+                                <p className="text-xs text-gray-500 mt-2">CWE: {f.cwe}</p>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="space-y-3 pl-11">
-                        <div>
-                          <h5 className="font-semibold text-xs uppercase text-gray-600 mb-1">Description</h5>
-                          <p className="text-sm text-gray-700">{f.description || f.title || 'Security vulnerability detected'}</p>
-                        </div>
-                        <div>
-                          <h5 className="font-semibold text-xs uppercase text-gray-600 mb-1">Recommended Fix</h5>
-                          <p className="text-sm text-gray-700">Implement proper input validation, sanitization, and security headers to prevent this vulnerability.</p>
-                        </div>
-                        <div>
-                          <h5 className="font-semibold text-xs uppercase text-gray-600 mb-1">Priority</h5>
-                          <p className="text-sm text-gray-700">
-                            {f.severity?.toLowerCase() === 'critical' || f.severity?.toLowerCase() === 'high' 
-                              ? 'Fix immediately before launch' 
-                              : 'Address in next sprint'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                      );
+                    })}
                 </div>
               </div>
             )}
