@@ -158,66 +158,66 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero */}
-      <div className="max-w-6xl mx-auto px-4 pt-20 pb-12">
-        <div className="text-center mb-16">
-          <p className="text-sm text-gray-500 uppercase tracking-wider mb-6">Security Scanning</p>
-          <h1 className="text-6xl md:text-7xl font-bold mb-4">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-8 sm:pb-12">
+        <div className="text-center mb-12 sm:mb-16">
+          <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wider mb-4 sm:mb-6">Security Scanning</p>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-3 sm:mb-4">
             Launch at
           </h1>
-          <h1 className="text-6xl md:text-7xl font-bold mb-8">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 sm:mb-8">
             <span className="relative inline-block">
               Full Speed
-              <svg className="absolute -bottom-2 left-0 w-full" height="8" viewBox="0 0 300 8" fill="none">
-                <path d="M0 4C100 1 200 1 300 4" stroke="#3B82F6" strokeWidth="4"/>
+              <svg className="absolute -bottom-1 sm:-bottom-2 left-0 w-full" height="6" viewBox="0 0 300 8" fill="none">
+                <path d="M0 4C100 1 200 1 300 4" stroke="#3B82F6" strokeWidth="3"/>
               </svg>
             </span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-12">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 sm:mb-12 px-4">
             Building your MVP but unsure if it's secure? Get instant security analysis before you launch.
           </p>
         </div>
 
         {/* Scan Form */}
-        <div className="max-w-3xl mx-auto mb-20">
-          <form onSubmit={handleSubmit} className="bg-white border-2 border-gray-900 p-6 rounded-xl shadow-lg">
-            <div className="flex flex-col md:flex-row gap-3">
+        <div className="max-w-3xl mx-auto mb-12 sm:mb-20">
+          <form onSubmit={handleSubmit} className="bg-white border-2 border-gray-900 p-4 sm:p-6 rounded-xl shadow-lg">
+            <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="your-app.com"
                 required
-                className="flex-1 px-6 py-4 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-lg"
+                className="flex-1 px-4 sm:px-6 py-3 sm:py-4 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-base sm:text-lg"
                 disabled={loading}
               />
               <button
                 type="submit"
                 disabled={loading || !url}
-                className="px-8 py-4 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg"
+                className="px-6 sm:px-8 py-3 sm:py-4 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-base sm:text-lg min-h-[44px]"
               >
                 {loading ? 'Scanning...' : 'Scan Now'}
               </button>
             </div>
-            <p className="text-sm text-gray-500 mt-3">Free security scan • No credit card required</p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-3">Free security scan • No credit card required</p>
           </form>
         </div>
       </div>
 
       {/* Problem Statement */}
       {!report && !loading && (
-        <div className="bg-gray-50 py-20">
+        <div className="bg-gray-50 py-12 sm:py-16 md:py-20">
           <div className="max-w-4xl mx-auto px-4 text-center">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 leading-tight">
               Building your MVP supercharges
-              <br />
-              productivity but also introduces
-              <br />
-              <span className="text-red-600">Hidden Security Risks</span>
+              <br className="hidden sm:block" />
+              <span className="sm:inline"> </span>productivity but also introduces
+              <br className="hidden sm:block" />
+              <span className="sm:inline"> </span><span className="text-red-600">Hidden Security Risks</span>
             </h2>
-            <p className="text-xl text-gray-600 mb-8">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8">
               Launching without knowing your vulnerabilities
-              <br />
-              Can Feel Unattainable
+              <br className="hidden sm:block" />
+              <span className="sm:inline"> </span>Can Feel Unattainable
             </p>
           </div>
         </div>
@@ -225,8 +225,8 @@ export default function Home() {
 
       {/* Error */}
       {error && (
-        <div className="max-w-3xl mx-auto px-4 mb-8">
-          <div className="bg-red-50 border-2 border-red-600 text-red-800 px-6 py-4 rounded-xl">
+        <div className="max-w-3xl mx-auto px-4 mb-6 sm:mb-8">
+          <div className="bg-red-50 border-2 border-red-600 text-red-800 px-4 sm:px-6 py-3 sm:py-4 rounded-xl text-sm sm:text-base">
             <span className="font-semibold">Error:</span> {error}
           </div>
         </div>
@@ -234,13 +234,13 @@ export default function Home() {
 
       {/* Status */}
       {jobId && status && !report && (
-        <div className="max-w-3xl mx-auto px-4 mb-8">
-          <div className="bg-white border-2 border-gray-900 p-8 rounded-xl">
-            <div className="flex items-center gap-4">
-              <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
+        <div className="max-w-3xl mx-auto px-4 mb-6 sm:mb-8">
+          <div className="bg-white border-2 border-gray-900 p-6 sm:p-8 rounded-xl">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-4 border-blue-600 border-t-transparent"></div>
               <div>
-                <h3 className="font-bold text-xl capitalize">{status}</h3>
-                <p className="text-gray-600">Analyzing your application security...</p>
+                <h3 className="font-bold text-lg sm:text-xl capitalize">{status}</h3>
+                <p className="text-sm sm:text-base text-gray-600">Analyzing your application security...</p>
               </div>
             </div>
           </div>
@@ -249,38 +249,38 @@ export default function Home() {
 
       {/* Report */}
       {report && (
-        <div className="max-w-5xl mx-auto px-4 pb-20">
+        <div className="max-w-5xl mx-auto px-4 pb-12 sm:pb-20">
           {/* Score - Always Visible */}
-          <div className="bg-black text-white p-12 rounded-xl mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm uppercase tracking-wider text-gray-400 mb-2">Security Score</p>
-                <h2 className="text-4xl font-bold">Your App's Security Rating</h2>
+          <div className="bg-black text-white p-6 sm:p-8 md:p-12 rounded-xl mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between gap-4 sm:gap-0">
+              <div className="text-center sm:text-left">
+                <p className="text-xs sm:text-sm uppercase tracking-wider text-gray-400 mb-2">Security Score</p>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold">Your App's Security Rating</h2>
               </div>
-              <div className="text-8xl font-bold">
-                {report.score || 0}<span className="text-4xl text-gray-400">/10</span>
+              <div className="text-6xl sm:text-7xl md:text-8xl font-bold">
+                {report.score || 0}<span className="text-3xl sm:text-4xl text-gray-400">/10</span>
               </div>
             </div>
           </div>
 
           {/* Critical Issues - Always Visible */}
           {criticalFindings.length > 0 && (
-            <div className="bg-white border-2 border-red-600 p-8 rounded-xl mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-3xl font-bold">Critical Vulnerabilities Detected</h3>
-                <span className="px-4 py-2 bg-red-600 text-white rounded-lg font-bold">
+            <div className="bg-white border-2 border-red-600 p-6 sm:p-8 rounded-xl mb-6 sm:mb-8">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-6">
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold">Critical Vulnerabilities Detected</h3>
+                <span className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm sm:text-base whitespace-nowrap">
                   {criticalFindings.length} Critical
                 </span>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {criticalFindings.map((f, i) => (
-                  <div key={i} className="flex items-start gap-4 p-4 bg-red-50 rounded-lg">
-                    <span className="text-3xl">🚨</span>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-lg mb-1">
+                  <div key={i} className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-red-50 rounded-lg">
+                    <span className="text-2xl sm:text-3xl">🚨</span>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-base sm:text-lg mb-1 break-words">
                         {f.title || f.description || 'Security Vulnerability'}
                       </h4>
-                      <p className="text-red-700 font-semibold uppercase text-sm">
+                      <p className="text-red-700 font-semibold uppercase text-xs sm:text-sm">
                         {f.severity} SEVERITY
                       </p>
                     </div>
@@ -292,16 +292,16 @@ export default function Home() {
 
           {/* Tech Stack */}
           {report.techStack && (
-            <div className="bg-white border-2 border-gray-900 p-8 rounded-xl mb-8">
-              <h3 className="text-2xl font-bold mb-4">Detected Tech Stack</h3>
-              <div className="flex gap-3">
+            <div className="bg-white border-2 border-gray-900 p-6 sm:p-8 rounded-xl mb-6 sm:mb-8">
+              <h3 className="text-xl sm:text-2xl font-bold mb-4">Detected Tech Stack</h3>
+              <div className="flex flex-wrap gap-2 sm:gap-3">
                 {report.techStack.framework && (
-                  <span className="px-5 py-2 bg-blue-600 text-white rounded-lg font-semibold">
+                  <span className="px-4 sm:px-5 py-2 bg-blue-600 text-white rounded-lg font-semibold text-sm sm:text-base">
                     {report.techStack.framework}
                   </span>
                 )}
                 {report.techStack.hosting && (
-                  <span className="px-5 py-2 bg-gray-900 text-white rounded-lg font-semibold">
+                  <span className="px-4 sm:px-5 py-2 bg-gray-900 text-white rounded-lg font-semibold text-sm sm:text-base">
                     {report.techStack.hosting}
                   </span>
                 )}
@@ -311,38 +311,38 @@ export default function Home() {
 
           {/* Summary - Always Visible */}
           {report.summary && (
-            <div className="bg-white border-2 border-gray-900 p-8 rounded-xl mb-8">
-              <h3 className="text-2xl font-bold mb-4">Executive Summary</h3>
-              <p className="text-gray-700 leading-relaxed">{report.summary}</p>
+            <div className="bg-white border-2 border-gray-900 p-6 sm:p-8 rounded-xl mb-6 sm:mb-8">
+              <h3 className="text-xl sm:text-2xl font-bold mb-4">Executive Summary</h3>
+              <p className="text-sm sm:text-base text-gray-700 leading-relaxed">{report.summary}</p>
             </div>
           )}
 
           {/* All Findings List - Always Visible */}
           {report.findings && report.findings.length > 0 && (
-            <div className="bg-white border-2 border-gray-900 p-8 rounded-xl mb-8">
-              <h3 className="text-2xl font-bold mb-6">All Security Issues Detected ({report.findings.length})</h3>
+            <div className="bg-white border-2 border-gray-900 p-6 sm:p-8 rounded-xl mb-6 sm:mb-8">
+              <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">All Security Issues Detected ({report.findings.length})</h3>
               <div className="space-y-3">
                 {report.findings.map((f, i) => (
-                  <div key={i} className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg">
-                    <span className="text-2xl">
+                  <div key={i} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 border-2 border-gray-200 rounded-lg">
+                    <span className="text-xl sm:text-2xl flex-shrink-0">
                       {f.severity?.toLowerCase() === 'critical' ? '🔴' : 
                        f.severity?.toLowerCase() === 'high' ? '🟠' :
                        f.severity?.toLowerCase() === 'medium' ? '🟡' : '🟢'}
                     </span>
-                    <div className="flex-1">
-                      <h4 className="font-bold text-lg">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-base sm:text-lg break-words">
                         {f.title || f.description || 'Security Issue'}
                       </h4>
-                      <p className="text-sm font-semibold uppercase text-gray-600">
+                      <p className="text-xs sm:text-sm font-semibold uppercase text-gray-600">
                         {f.severity || 'Unknown'} Severity
                       </p>
                     </div>
-                    <span className="text-gray-400 text-2xl">🔒</span>
+                    <span className="text-gray-400 text-xl sm:text-2xl flex-shrink-0">🔒</span>
                   </div>
                 ))}
               </div>
-              <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-600 rounded-lg">
-                <p className="text-center font-semibold text-yellow-900">
+              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-yellow-50 border-2 border-yellow-600 rounded-lg">
+                <p className="text-center font-semibold text-yellow-900 text-sm sm:text-base">
                   ⚠️ Detailed fixes and remediation steps are locked
                 </p>
               </div>
@@ -351,33 +351,33 @@ export default function Home() {
 
           {/* Email Gate - Inline, Not Overlay */}
           {showEmailGate && !unlocked && (
-            <div className="bg-white border-2 border-red-600 p-12 rounded-xl">
+            <div className="bg-white border-2 border-red-600 p-6 sm:p-8 md:p-12 rounded-xl">
               <div className="max-w-2xl mx-auto">
-                <div className="text-center mb-8">
-                  <span className="text-6xl mb-4 block">🔒</span>
-                  <h3 className="text-4xl font-bold mb-3">Unlock Detailed Fixes</h3>
-                  <p className="text-xl text-gray-600">
+                <div className="text-center mb-6 sm:mb-8">
+                  <span className="text-5xl sm:text-6xl mb-4 block">🔒</span>
+                  <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3">Unlock Detailed Fixes</h3>
+                  <p className="text-base sm:text-lg md:text-xl text-gray-600 px-2">
                     Get step-by-step remediation instructions for all {report.findings?.length || 0} vulnerabilities
                   </p>
                 </div>
 
                 {/* What You Get */}
-                <div className="bg-gray-50 p-6 rounded-lg mb-8">
-                  <h4 className="font-bold text-lg mb-4">What's Included:</h4>
+                <div className="bg-gray-50 p-4 sm:p-6 rounded-lg mb-6 sm:mb-8">
+                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">What's Included:</h4>
                   <ul className="space-y-2">
-                    <li className="flex items-start gap-3">
+                    <li className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
                       <span className="text-green-600 font-bold">✓</span>
                       <span>Detailed fix instructions for each vulnerability</span>
                     </li>
-                    <li className="flex items-start gap-3">
+                    <li className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
                       <span className="text-green-600 font-bold">✓</span>
                       <span>Code snippets and implementation examples</span>
                     </li>
-                    <li className="flex items-start gap-3">
+                    <li className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
                       <span className="text-green-600 font-bold">✓</span>
                       <span>Priority ranking and risk assessment</span>
                     </li>
-                    <li className="flex items-start gap-3">
+                    <li className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
                       <span className="text-green-600 font-bold">✓</span>
                       <span>Best practices and prevention tips</span>
                     </li>
@@ -386,37 +386,37 @@ export default function Home() {
 
                 {/* Email Option */}
                 <form onSubmit={handleEmailUnlock} className="mb-6">
-                  <p className="font-bold text-lg mb-3">Get it FREE via email</p>
-                    <div className="flex gap-2">
+                  <p className="font-bold text-base sm:text-lg mb-3">Get it FREE via email</p>
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="your@email.com"
                         required
-                        className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
+                        className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-base min-h-[44px]"
                       />
                       <button
                         type="submit"
-                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
+                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold whitespace-nowrap min-h-[44px]"
                       >
                         Unlock
                       </button>
                   </div>
                 </form>
 
-                <div className="relative my-8">
+                <div className="relative my-6 sm:my-8">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t-2 border-gray-300"></div>
                   </div>
                   <div className="relative flex justify-center">
-                    <span className="px-6 bg-white text-gray-500 font-semibold">or instant access</span>
+                    <span className="px-4 sm:px-6 bg-white text-gray-500 font-semibold text-sm sm:text-base">or instant access</span>
                   </div>
                 </div>
 
                 {/* Payment Option */}
-                <form onSubmit={handlePayment} className="p-6 bg-black text-white rounded-lg">
-                  <p className="font-bold text-2xl mb-6 text-center">Instant Access - $2</p>
+                <form onSubmit={handlePayment} className="p-4 sm:p-6 bg-black text-white rounded-lg">
+                  <p className="font-bold text-xl sm:text-2xl mb-4 sm:mb-6 text-center">Instant Access - $2</p>
                   <div className="space-y-3">
                     <input
                       type="text"
@@ -424,7 +424,7 @@ export default function Home() {
                       required
                       value={paymentData.name}
                       onChange={(e) => setPaymentData({...paymentData, name: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500"
+                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500 text-base min-h-[44px]"
                     />
                     <input
                       type="text"
@@ -432,7 +432,7 @@ export default function Home() {
                       required
                       value={paymentData.appName}
                       onChange={(e) => setPaymentData({...paymentData, appName: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500"
+                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500 text-base min-h-[44px]"
                     />
                     <input
                       type="text"
@@ -440,7 +440,7 @@ export default function Home() {
                       required
                       value={paymentData.totalSpent}
                       onChange={(e) => setPaymentData({...paymentData, totalSpent: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500"
+                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500 text-base min-h-[44px]"
                     />
                     <input
                       type="email"
@@ -448,7 +448,7 @@ export default function Home() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500"
+                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500 text-base min-h-[44px]"
                     />
                     <input
                       type="tel"
@@ -456,11 +456,11 @@ export default function Home() {
                       required
                       value={paymentData.phone}
                       onChange={(e) => setPaymentData({...paymentData, phone: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500"
+                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500 text-base min-h-[44px]"
                     />
                     <button
                       type="submit"
-                      className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-lg mt-4"
+                      className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-base sm:text-lg mt-4 min-h-[44px]"
                     >
                       Pay $2 - Get Instant Access
                     </button>
