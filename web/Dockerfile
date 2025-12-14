@@ -26,7 +26,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/package-lock.json ./package-lock.json
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
+RUN mkdir -p ./public && (cp -r /app/public/* ./public/ 2>/dev/null || true)
 COPY --from=builder /app/next.config.js ./next.config.js
 COPY --from=deps /app/node_modules ./node_modules
 

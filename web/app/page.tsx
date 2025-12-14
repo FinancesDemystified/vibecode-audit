@@ -416,97 +416,99 @@ export default function Home() {
 
                 {/* Payment Option */}
                 <form onSubmit={handlePayment} className="p-6 bg-black text-white rounded-lg">
-                    <p className="font-bold text-xl mb-4">Instant Access - $2</p>
-                    <div className="space-y-3">
-                      <input
-                        type="text"
-                        placeholder="Name"
-                        required
-                        value={paymentData.name}
-                        onChange={(e) => setPaymentData({...paymentData, name: e.target.value})}
-                        className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-                      />
-                      <input
-                        type="text"
-                        placeholder="App Name"
-                        required
-                        value={paymentData.appName}
-                        onChange={(e) => setPaymentData({...paymentData, appName: e.target.value})}
-                        className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Total Spent on App"
-                        required
-                        value={paymentData.totalSpent}
-                        onChange={(e) => setPaymentData({...paymentData, totalSpent: e.target.value})}
-                        className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-                      />
-                      <input
-                        type="email"
-                        placeholder="Email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-                      />
-                      <input
-                        type="tel"
-                        placeholder="Phone"
-                        required
-                        value={paymentData.phone}
-                        onChange={(e) => setPaymentData({...paymentData, phone: e.target.value})}
-                        className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-                      />
-                      <button
-                        type="submit"
-                        className="w-full px-6 py-3 bg-black text-white rounded-lg hover:bg-gray-800 font-bold"
-                      >
-                        Pay $2 - Get Instant Access
-                      </button>
-                    </div>
-                  </form>
-                </div>
+                  <p className="font-bold text-2xl mb-6 text-center">Instant Access - $2</p>
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      placeholder="Name"
+                      required
+                      value={paymentData.name}
+                      onChange={(e) => setPaymentData({...paymentData, name: e.target.value})}
+                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="App Name"
+                      required
+                      value={paymentData.appName}
+                      onChange={(e) => setPaymentData({...paymentData, appName: e.target.value})}
+                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Total Spent on App"
+                      required
+                      value={paymentData.totalSpent}
+                      onChange={(e) => setPaymentData({...paymentData, totalSpent: e.target.value})}
+                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500"
+                    />
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500"
+                    />
+                    <input
+                      type="tel"
+                      placeholder="Phone"
+                      required
+                      value={paymentData.phone}
+                      onChange={(e) => setPaymentData({...paymentData, phone: e.target.value})}
+                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500"
+                    />
+                    <button
+                      type="submit"
+                      className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-lg mt-4"
+                    >
+                      Pay $2 - Get Instant Access
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
 
-          {/* Full Report */}
-          {unlocked && (
+          {/* Detailed Fixes - Only After Unlock */}
+          {unlocked && report.findings && report.findings.length > 0 && (
             <div className="bg-white border-2 border-gray-900 p-8 rounded-xl">
-              <h2 className="text-3xl font-bold mb-8">Complete Security Report</h2>
-              
-              {report.summary && (
-                <div className="mb-8 p-6 bg-gray-50 rounded-lg">
-                  <h3 className="text-xl font-bold mb-3">Executive Summary</h3>
-                  <p className="text-gray-700 leading-relaxed">{report.summary}</p>
-                </div>
-              )}
-
-              {report.findings && report.findings.length > 0 && (
-                <div>
-                  <h3 className="text-2xl font-bold mb-6">All Findings ({report.findings.length})</h3>
-                  <div className="space-y-4">
-                    {report.findings.map((f, i) => (
-                      <div key={i} className="flex items-start gap-4 p-5 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-colors">
-                        <span className="text-2xl">
-                          {f.severity?.toLowerCase() === 'critical' ? '🔴' : 
-                           f.severity?.toLowerCase() === 'high' ? '🟠' :
-                           f.severity?.toLowerCase() === 'medium' ? '🟡' : '🟢'}
+              <h3 className="text-3xl font-bold mb-8">Detailed Remediation Guide</h3>
+              <div className="space-y-6">
+                {report.findings.map((f, i) => (
+                  <div key={i} className="p-6 border-2 border-gray-200 rounded-lg">
+                    <div className="flex items-start gap-4 mb-4">
+                      <span className="text-3xl">
+                        {f.severity?.toLowerCase() === 'critical' ? '🔴' : 
+                         f.severity?.toLowerCase() === 'high' ? '🟠' :
+                         f.severity?.toLowerCase() === 'medium' ? '🟡' : '🟢'}
+                      </span>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-xl mb-2">
+                          {f.title || f.description || 'Security Issue'}
+                        </h4>
+                        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-semibold uppercase">
+                          {f.severity || 'Unknown'} Severity
                         </span>
-                        <div>
-                          <h4 className="font-bold text-lg mb-1">
-                            {f.title || f.description || 'Security Issue'}
-                          </h4>
-                          <p className="text-sm font-semibold uppercase text-gray-600">
-                            {f.severity || 'Unknown'} Severity
-                          </p>
-                        </div>
                       </div>
-                    ))}
+                    </div>
+                    <div className="pl-14 space-y-3">
+                      <div>
+                        <h5 className="font-semibold text-sm uppercase text-gray-600 mb-1">Description</h5>
+                        <p className="text-gray-700">{f.description || f.title || 'Security vulnerability detected'}</p>
+                      </div>
+                      <div>
+                        <h5 className="font-semibold text-sm uppercase text-gray-600 mb-1">Recommended Fix</h5>
+                        <p className="text-gray-700">Implement proper input validation, sanitization, and security headers to prevent this vulnerability.</p>
+                      </div>
+                      <div>
+                        <h5 className="font-semibold text-sm uppercase text-gray-600 mb-1">Priority</h5>
+                        <p className="text-gray-700">{f.severity?.toLowerCase() === 'critical' || f.severity?.toLowerCase() === 'high' ? 'Fix immediately before launch' : 'Address in next sprint'}</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           )}
         </div>
