@@ -309,31 +309,84 @@ export default function Home() {
             </div>
           )}
 
-          {/* Email Gate */}
-          {showEmailGate && !unlocked && (
-            <div className="bg-gray-50 border-2 border-gray-900 p-12 rounded-xl relative">
-              {/* Blurred Content */}
-              <div className="filter blur-md opacity-40 mb-8 select-none pointer-events-none">
-                <h3 className="text-3xl font-bold mb-6">Complete Security Analysis</h3>
-                <div className="space-y-3">
-                  <div className="h-6 bg-gray-300 rounded w-full"></div>
-                  <div className="h-6 bg-gray-300 rounded w-5/6"></div>
-                  <div className="h-6 bg-gray-300 rounded w-4/6"></div>
-                  <div className="h-6 bg-gray-300 rounded w-5/6"></div>
-                </div>
+          {/* Summary - Always Visible */}
+          {report.summary && (
+            <div className="bg-white border-2 border-gray-900 p-8 rounded-xl mb-8">
+              <h3 className="text-2xl font-bold mb-4">Executive Summary</h3>
+              <p className="text-gray-700 leading-relaxed">{report.summary}</p>
+            </div>
+          )}
+
+          {/* All Findings List - Always Visible */}
+          {report.findings && report.findings.length > 0 && (
+            <div className="bg-white border-2 border-gray-900 p-8 rounded-xl mb-8">
+              <h3 className="text-2xl font-bold mb-6">All Security Issues Detected ({report.findings.length})</h3>
+              <div className="space-y-3">
+                {report.findings.map((f, i) => (
+                  <div key={i} className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg">
+                    <span className="text-2xl">
+                      {f.severity?.toLowerCase() === 'critical' ? '🔴' : 
+                       f.severity?.toLowerCase() === 'high' ? '🟠' :
+                       f.severity?.toLowerCase() === 'medium' ? '🟡' : '🟢'}
+                    </span>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-lg">
+                        {f.title || f.description || 'Security Issue'}
+                      </h4>
+                      <p className="text-sm font-semibold uppercase text-gray-600">
+                        {f.severity || 'Unknown'} Severity
+                      </p>
+                    </div>
+                    <span className="text-gray-400 text-2xl">🔒</span>
+                  </div>
+                ))}
               </div>
+              <div className="mt-6 p-4 bg-yellow-50 border-2 border-yellow-600 rounded-lg">
+                <p className="text-center font-semibold text-yellow-900">
+                  ⚠️ Detailed fixes and remediation steps are locked
+                </p>
+              </div>
+            </div>
+          )}
 
-              {/* Unlock Options */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-white border-2 border-gray-900 p-8 rounded-xl max-w-lg w-full mx-4">
-                  <h3 className="text-3xl font-bold mb-2 text-center">Unlock Full Report</h3>
-                  <p className="text-center text-gray-600 mb-8">
-                    Get detailed recommendations and actionable fixes
+          {/* Email Gate - Inline, Not Overlay */}
+          {showEmailGate && !unlocked && (
+            <div className="bg-white border-2 border-red-600 p-12 rounded-xl">
+              <div className="max-w-2xl mx-auto">
+                <div className="text-center mb-8">
+                  <span className="text-6xl mb-4 block">🔒</span>
+                  <h3 className="text-4xl font-bold mb-3">Unlock Detailed Fixes</h3>
+                  <p className="text-xl text-gray-600">
+                    Get step-by-step remediation instructions for all {report.findings?.length || 0} vulnerabilities
                   </p>
+                </div>
 
-                  {/* Email Option */}
-                  <form onSubmit={handleEmailUnlock} className="mb-6">
-                    <p className="font-semibold mb-3">Get it FREE via email</p>
+                {/* What You Get */}
+                <div className="bg-gray-50 p-6 rounded-lg mb-8">
+                  <h4 className="font-bold text-lg mb-4">What's Included:</h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-start gap-3">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span>Detailed fix instructions for each vulnerability</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span>Code snippets and implementation examples</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span>Priority ranking and risk assessment</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-green-600 font-bold">✓</span>
+                      <span>Best practices and prevention tips</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Email Option */}
+                <form onSubmit={handleEmailUnlock} className="mb-6">
+                  <p className="font-bold text-lg mb-3">Get it FREE via email</p>
                     <div className="flex gap-2">
                       <input
                         type="email"
@@ -349,20 +402,20 @@ export default function Home() {
                       >
                         Unlock
                       </button>
-                    </div>
-                  </form>
-
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-300"></div>
-                    </div>
-                    <div className="relative flex justify-center">
-                      <span className="px-4 bg-white text-gray-500">or instant access</span>
-                    </div>
                   </div>
+                </form>
 
-                  {/* Payment Option */}
-                  <form onSubmit={handlePayment} className="p-6 bg-gray-50 border-2 border-gray-900 rounded-lg">
+                <div className="relative my-8">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t-2 border-gray-300"></div>
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="px-6 bg-white text-gray-500 font-semibold">or instant access</span>
+                  </div>
+                </div>
+
+                {/* Payment Option */}
+                <form onSubmit={handlePayment} className="p-6 bg-black text-white rounded-lg">
                     <p className="font-bold text-xl mb-4">Instant Access - $2</p>
                     <div className="space-y-3">
                       <input
