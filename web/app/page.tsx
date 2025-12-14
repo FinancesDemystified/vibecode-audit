@@ -34,7 +34,7 @@ export default function Home() {
   const [showEmailGate, setShowEmailGate] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [email, setEmail] = useState('');
-  const [paymentData, setPaymentData] = useState({ name: '', appName: '', totalSpent: '', phone: '' });
+  const [currentTab, setCurrentTab] = useState<'scan' | 'results' | 'details'>('scan');
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vibecode-audit-production.up.railway.app';
 
@@ -45,6 +45,7 @@ export default function Home() {
     setReport(null);
     setShowEmailGate(false);
     setUnlocked(false);
+    setCurrentTab('scan');
 
     try {
       let normalizedUrl = url.trim();
@@ -123,12 +124,14 @@ export default function Home() {
         const data = await res.json();
         setReport(data.result?.data);
         setShowEmailGate(true);
+        setCurrentTab('results');
         return;
       }
       const restRes = await fetch(`${API_URL}/api/report/${id}`);
       if (restRes.ok) {
         setReport(await restRes.json());
         setShowEmailGate(true);
+        setCurrentTab('results');
       } else {
         throw new Error('Report not found');
       }
@@ -142,13 +145,8 @@ export default function Home() {
     if (email) {
       setUnlocked(true);
       setShowEmailGate(false);
+      setCurrentTab('details');
     }
-  };
-
-  const handlePayment = (e: React.FormEvent) => {
-    e.preventDefault();
-    setUnlocked(true);
-    setShowEmailGate(false);
   };
 
   const criticalFindings = report?.findings?.filter(f => 
@@ -157,362 +155,321 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero */}
-      <div className="max-w-6xl mx-auto px-2 sm:px-4 md:px-6 pt-6 sm:pt-12 md:pt-20 pb-4 sm:pb-8 md:pb-12">
-        <div className="text-center mb-6 sm:mb-12 md:mb-16">
-          <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 uppercase tracking-wider mb-2 sm:mb-4 md:mb-6">Security Scanning</p>
-          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-2 sm:mb-3 md:mb-4 leading-tight">
-            Launch at
-          </h1>
-          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 md:mb-8 leading-tight">
-            <span className="relative inline-block">
-              Full Speed
-              <svg className="hidden sm:block absolute -bottom-1 md:-bottom-2 left-0 w-full" height="6" viewBox="0 0 300 8" fill="none">
-                <path d="M0 4C100 1 200 1 300 4" stroke="#3B82F6" strokeWidth="3"/>
-              </svg>
-            </span>
-          </h1>
-          <p className="text-xs sm:text-base md:text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto mb-4 sm:mb-8 md:mb-12 px-2 sm:px-4 leading-snug sm:leading-normal">
-            Building your MVP but unsure if it's secure? Get instant security analysis before you launch.
-          </p>
-        </div>
-
-        {/* Scan Form */}
-        <div className="max-w-3xl mx-auto mb-6 sm:mb-12 md:mb-20">
-          <form onSubmit={handleSubmit} className="bg-white border-2 border-gray-900 p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl shadow-lg">
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-              <input
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="your-app.com"
-                required
-                className="flex-1 px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-sm sm:text-base md:text-lg"
-                disabled={loading}
-              />
-              <button
-                type="submit"
-                disabled={loading || !url}
-                className="px-4 sm:px-6 md:px-8 py-2 sm:py-3 md:py-4 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm sm:text-base md:text-lg min-h-[40px] sm:min-h-[44px]"
-              >
-                {loading ? 'Scanning...' : 'Scan Now'}
-              </button>
-            </div>
-            <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 mt-2 sm:mt-3">Free security scan • No credit card required</p>
-          </form>
+      {/* Header */}
+      <div className="border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <h1 className="text-xl font-bold">VibeCode Security Audit</h1>
         </div>
       </div>
 
-      {/* Problem Statement */}
-      {!report && !loading && (
-        <div className="bg-gray-50 py-6 sm:py-12 md:py-16 lg:py-20">
-          <div className="max-w-4xl mx-auto px-3 sm:px-4 text-center">
-            <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold mb-3 sm:mb-4 md:mb-6 leading-tight">
-              Building your MVP supercharges productivity but also introduces
-              <span className="block sm:inline"> <span className="text-red-600">Hidden Security Risks</span></span>
-            </h2>
-            <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-600 mb-4 sm:mb-6 md:mb-8 leading-snug">
-              Launching without knowing your vulnerabilities can feel unattainable
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Error */}
-      {error && (
-        <div className="max-w-3xl mx-auto px-3 sm:px-4 mb-3 sm:mb-6 md:mb-8">
-          <div className="bg-red-50 border-2 border-red-600 text-red-800 px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 rounded-lg sm:rounded-xl text-xs sm:text-sm md:text-base">
-            <span className="font-semibold">Error:</span> {error}
-          </div>
-        </div>
-      )}
-
-      {/* Status */}
-      {jobId && status && !report && (
-        <div className="max-w-3xl mx-auto px-3 sm:px-4 mb-3 sm:mb-6 md:mb-8">
-          <div className="bg-white border-2 border-gray-900 p-4 sm:p-6 md:p-8 rounded-lg sm:rounded-xl">
-            <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-              <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 border-4 border-blue-600 border-t-transparent flex-shrink-0"></div>
-              <div>
-                <h3 className="font-bold text-base sm:text-lg md:text-xl capitalize">{status}</h3>
-                <p className="text-xs sm:text-sm md:text-base text-gray-600">Analyzing your application security...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Report */}
+      {/* Navigation Tabs - Only show when we have a report */}
       {report && (
-        <div className="max-w-5xl mx-auto px-3 sm:px-4 pb-6 sm:pb-12 md:pb-20">
-          {/* Score - Always Visible */}
-          <div className="bg-black text-white p-4 sm:p-6 md:p-8 lg:p-12 rounded-lg sm:rounded-xl mb-3 sm:mb-6 md:mb-8">
-            <div className="flex flex-row items-center justify-between gap-3 sm:gap-4">
-              <div className="text-left">
-                <p className="text-[10px] sm:text-xs md:text-sm uppercase tracking-wider text-gray-400 mb-1 sm:mb-2">Security Score</p>
-                <h2 className="text-sm sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold leading-tight">Your App's Security Rating</h2>
-              </div>
-              <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold flex-shrink-0">
-                {report.score || 0}<span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl text-gray-400">/10</span>
-              </div>
+        <div className="border-b border-gray-200 bg-gray-50">
+          <div className="max-w-4xl mx-auto px-4">
+            <div className="flex gap-8">
+              <button
+                onClick={() => setCurrentTab('scan')}
+                className={`py-4 px-2 border-b-2 font-semibold text-sm transition-colors ${
+                  currentTab === 'scan'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Scan URL
+              </button>
+              <button
+                onClick={() => setCurrentTab('results')}
+                className={`py-4 px-2 border-b-2 font-semibold text-sm transition-colors ${
+                  currentTab === 'results'
+                    ? 'border-blue-600 text-blue-600'
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                View Results
+              </button>
+              {unlocked && (
+                <button
+                  onClick={() => setCurrentTab('details')}
+                  className={`py-4 px-2 border-b-2 font-semibold text-sm transition-colors ${
+                    currentTab === 'details'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Full Report
+                </button>
+              )}
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Critical Issues - Always Visible */}
-          {criticalFindings.length > 0 && (
-            <div className="bg-white border-2 border-red-600 p-3 sm:p-4 md:p-6 lg:p-8 rounded-lg sm:rounded-xl mb-3 sm:mb-6 md:mb-8">
-              <div className="flex flex-row items-center justify-between gap-2 sm:gap-3 mb-3 sm:mb-4 md:mb-6">
-                <h3 className="text-sm sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-bold leading-tight">Critical Vulnerabilities</h3>
-                <span className="px-2 sm:px-3 md:px-4 py-1 sm:py-2 bg-red-600 text-white rounded text-[10px] sm:text-xs md:text-sm lg:text-base font-bold whitespace-nowrap flex-shrink-0">
-                  {criticalFindings.length} Critical
-                </span>
-              </div>
-              <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                {criticalFindings.map((f, i) => (
-                  <div key={i} className="flex items-start gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 bg-red-50 rounded">
-                    <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl flex-shrink-0">🚨</span>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-xs sm:text-sm md:text-base lg:text-lg mb-0.5 sm:mb-1 break-words leading-tight">
-                        {f.title || f.description || 'Security Vulnerability'}
-                      </h4>
-                      <p className="text-red-700 font-semibold uppercase text-[9px] sm:text-[10px] md:text-xs lg:text-sm">
-                        {f.severity} SEVERITY
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Tech Stack */}
-          {report.techStack && (
-            <div className="bg-white border-2 border-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 rounded-lg sm:rounded-xl mb-3 sm:mb-6 md:mb-8">
-              <h3 className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold mb-2 sm:mb-3 md:mb-4">Tech Stack</h3>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2 md:gap-3">
-                {report.techStack.framework && (
-                  <span className="px-2 sm:px-3 md:px-4 lg:px-5 py-1 sm:py-1.5 md:py-2 bg-blue-600 text-white rounded text-[10px] sm:text-xs md:text-sm lg:text-base font-semibold">
-                    {report.techStack.framework}
-                  </span>
-                )}
-                {report.techStack.hosting && (
-                  <span className="px-2 sm:px-3 md:px-4 lg:px-5 py-1 sm:py-1.5 md:py-2 bg-gray-900 text-white rounded text-[10px] sm:text-xs md:text-sm lg:text-base font-semibold">
-                    {report.techStack.hosting}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Summary - Always Visible */}
-          {report.summary && (
-            <div className="bg-white border-2 border-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 rounded-lg sm:rounded-xl mb-3 sm:mb-6 md:mb-8">
-              <h3 className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold mb-2 sm:mb-3 md:mb-4">Executive Summary</h3>
-              <p className="text-xs sm:text-sm md:text-base text-gray-700 leading-snug sm:leading-relaxed">{report.summary}</p>
-            </div>
-          )}
-
-          {/* All Findings List - Always Visible */}
-          {report.findings && report.findings.length > 0 && (
-            <div className="bg-white border-2 border-gray-900 p-3 sm:p-4 md:p-6 lg:p-8 rounded-lg sm:rounded-xl mb-3 sm:mb-6 md:mb-8">
-              <h3 className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold mb-2 sm:mb-4 md:mb-6">All Issues ({report.findings.length})</h3>
-              <div className="space-y-1.5 sm:space-y-2 md:space-y-3">
-                {report.findings.map((f, i) => (
-                  <div key={i} className="flex items-center gap-2 sm:gap-3 md:gap-4 p-2 sm:p-3 md:p-4 border border-gray-200 rounded">
-                    <span className="text-base sm:text-lg md:text-xl lg:text-2xl flex-shrink-0">
-                      {f.severity?.toLowerCase() === 'critical' ? '🔴' : 
-                       f.severity?.toLowerCase() === 'high' ? '🟠' :
-                       f.severity?.toLowerCase() === 'medium' ? '🟡' : '🟢'}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-xs sm:text-sm md:text-base lg:text-lg break-words leading-tight">
-                        {f.title || f.description || 'Security Issue'}
-                      </h4>
-                      <p className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm font-semibold uppercase text-gray-600">
-                        {f.severity || 'Unknown'} Severity
-                      </p>
-                    </div>
-                    <span className="text-gray-400 text-base sm:text-lg md:text-xl lg:text-2xl flex-shrink-0">🔒</span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 sm:mt-4 md:mt-6 p-2 sm:p-3 md:p-4 bg-yellow-50 border-2 border-yellow-600 rounded">
-                <p className="text-center font-semibold text-yellow-900 text-[10px] sm:text-xs md:text-sm lg:text-base leading-tight">
-                  ⚠️ Detailed fixes locked
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Email Gate - Inline, Not Overlay */}
-          {showEmailGate && !unlocked && (
-            <div className="bg-white border-2 border-red-600 p-6 sm:p-8 md:p-12 rounded-xl">
-              <div className="max-w-2xl mx-auto">
-                <div className="text-center mb-6 sm:mb-8">
-                  <span className="text-5xl sm:text-6xl mb-4 block">🔒</span>
-                  <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3">Unlock Detailed Fixes</h3>
-                  <p className="text-base sm:text-lg md:text-xl text-gray-600 px-2">
-                    Get step-by-step remediation instructions for all {report.findings?.length || 0} vulnerabilities
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Scan Tab */}
+        {currentTab === 'scan' && (
+          <div className="max-w-2xl mx-auto">
+            {!loading && !report && (
+              <>
+                <div className="text-center mb-12">
+                  <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                    Get instant security analysis
+                  </h2>
+                  <p className="text-lg text-gray-600">
+                    Scan your web app for vulnerabilities before launch
                   </p>
                 </div>
 
-                {/* What You Get */}
-                <div className="bg-gray-50 p-4 sm:p-6 rounded-lg mb-6 sm:mb-8">
-                  <h4 className="font-bold text-base sm:text-lg mb-3 sm:mb-4">What's Included:</h4>
-                  <ul className="space-y-2">
-                    <li className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span>Detailed fix instructions for each vulnerability</span>
-                    </li>
-                    <li className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span>Code snippets and implementation examples</span>
-                    </li>
-                    <li className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span>Priority ranking and risk assessment</span>
-                    </li>
-                    <li className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span>Best practices and prevention tips</span>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Email Option */}
-                <form onSubmit={handleEmailUnlock} className="mb-6">
-                  <p className="font-bold text-base sm:text-lg mb-3">Get it FREE via email</p>
-                    <div className="flex flex-col sm:flex-row gap-2">
+                <div className="bg-white border-2 border-gray-900 rounded-xl p-8 shadow-sm">
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Website URL
+                      </label>
                       <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="your@email.com"
+                        type="text"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        placeholder="example.com"
                         required
-                        className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-base min-h-[44px]"
+                        className="w-full px-4 py-4 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-base"
                       />
-                      <button
-                        type="submit"
-                        className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold whitespace-nowrap min-h-[44px]"
-                      >
-                        Unlock
-                      </button>
-                  </div>
-                </form>
-
-                <div className="relative my-6 sm:my-8">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t-2 border-gray-300"></div>
-                  </div>
-                  <div className="relative flex justify-center">
-                    <span className="px-4 sm:px-6 bg-white text-gray-500 font-semibold text-sm sm:text-base">or instant access</span>
-                  </div>
-                </div>
-
-                {/* Payment Option */}
-                <form onSubmit={handlePayment} className="p-4 sm:p-6 bg-black text-white rounded-lg">
-                  <p className="font-bold text-xl sm:text-2xl mb-4 sm:mb-6 text-center">Instant Access - $2</p>
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      placeholder="Name"
-                      required
-                      value={paymentData.name}
-                      onChange={(e) => setPaymentData({...paymentData, name: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500 text-base min-h-[44px]"
-                    />
-                    <input
-                      type="text"
-                      placeholder="App Name"
-                      required
-                      value={paymentData.appName}
-                      onChange={(e) => setPaymentData({...paymentData, appName: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500 text-base min-h-[44px]"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Total Spent on App"
-                      required
-                      value={paymentData.totalSpent}
-                      onChange={(e) => setPaymentData({...paymentData, totalSpent: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500 text-base min-h-[44px]"
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500 text-base min-h-[44px]"
-                    />
-                    <input
-                      type="tel"
-                      placeholder="Phone"
-                      required
-                      value={paymentData.phone}
-                      onChange={(e) => setPaymentData({...paymentData, phone: e.target.value})}
-                      className="w-full px-4 py-3 border-2 border-gray-700 bg-gray-900 text-white rounded-lg focus:border-blue-600 focus:outline-none placeholder-gray-500 text-base min-h-[44px]"
-                    />
+                    </div>
                     <button
                       type="submit"
-                      className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold text-base sm:text-lg mt-4 min-h-[44px]"
+                      disabled={!url}
+                      className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg transition-colors"
                     >
-                      Pay $2 - Get Instant Access
+                      Start Security Scan
                     </button>
+                  </form>
+                  <p className="text-sm text-gray-500 text-center mt-4">
+                    Free scan • No credit card required
+                  </p>
+                </div>
+
+                <div className="mt-12 p-6 bg-blue-50 rounded-xl border border-blue-200">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <span className="text-2xl">🔒</span>
+                    <span>How it works</span>
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                        1
+                      </div>
+                      <p className="text-sm text-gray-700">Enter your website URL</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                        2
+                      </div>
+                      <p className="text-sm text-gray-700">AI scans for security vulnerabilities</p>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                        3
+                      </div>
+                      <p className="text-sm text-gray-700">Get detailed security report</p>
+                    </div>
                   </div>
-                </form>
+                </div>
+              </>
+            )}
+
+            {loading && (
+              <div className="bg-white border-2 border-gray-900 rounded-xl p-12 text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mb-6"></div>
+                <h3 className="text-xl font-bold capitalize mb-2">{status}</h3>
+                <p className="text-gray-600">Analyzing your application security...</p>
+              </div>
+            )}
+
+            {error && (
+              <div className="bg-red-50 border-2 border-red-600 text-red-800 px-6 py-4 rounded-xl">
+                <span className="font-semibold">Error:</span> {error}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Results Tab */}
+        {currentTab === 'results' && report && (
+          <div className="space-y-6">
+            {/* Score Card */}
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-xl p-8 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm uppercase tracking-wider opacity-90 mb-1">Security Score</p>
+                  <h2 className="text-2xl font-bold">Your App Rating</h2>
+                </div>
+                <div className="text-6xl font-bold">
+                  {report.score || 0}<span className="text-3xl opacity-75">/10</span>
+                </div>
               </div>
             </div>
-          )}
 
-          {/* Detailed Fixes - Only After Unlock */}
-          {unlocked && report.findings && report.findings.length > 0 && (
-            <div className="bg-white border-2 border-gray-900 p-8 rounded-xl">
-              <h3 className="text-3xl font-bold mb-8">Detailed Remediation Guide</h3>
-              <div className="space-y-6">
-                {report.findings.map((f, i) => (
-                  <div key={i} className="p-6 border-2 border-gray-200 rounded-lg">
-                    <div className="flex items-start gap-4 mb-4">
-                      <span className="text-3xl">
+            {/* Critical Issues */}
+            {criticalFindings.length > 0 && (
+              <div className="bg-white border-2 border-red-600 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold flex items-center gap-2">
+                    <span>🚨</span>
+                    <span>Critical Issues</span>
+                  </h3>
+                  <span className="px-3 py-1 bg-red-600 text-white rounded-full text-sm font-bold">
+                    {criticalFindings.length}
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {criticalFindings.map((f, i) => (
+                    <div key={i} className="p-4 bg-red-50 rounded-lg">
+                      <h4 className="font-semibold mb-1">{f.title || f.description || 'Security Vulnerability'}</h4>
+                      <p className="text-sm text-red-700 uppercase font-semibold">{f.severity} SEVERITY</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tech Stack */}
+            {report.techStack && (
+              <div className="bg-white border-2 border-gray-900 rounded-xl p-6">
+                <h3 className="text-lg font-bold mb-3">Detected Technologies</h3>
+                <div className="flex flex-wrap gap-2">
+                  {report.techStack.framework && (
+                    <span className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold text-sm">
+                      {report.techStack.framework}
+                    </span>
+                  )}
+                  {report.techStack.hosting && (
+                    <span className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold text-sm">
+                      {report.techStack.hosting}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* All Findings */}
+            {report.findings && report.findings.length > 0 && (
+              <div className="bg-white border-2 border-gray-900 rounded-xl p-6">
+                <h3 className="text-lg font-bold mb-4">
+                  All Issues Found ({report.findings.length})
+                </h3>
+                <div className="space-y-2">
+                  {report.findings.map((f, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-blue-600 transition-colors">
+                      <span className="text-xl">
                         {f.severity?.toLowerCase() === 'critical' ? '🔴' : 
                          f.severity?.toLowerCase() === 'high' ? '🟠' :
                          f.severity?.toLowerCase() === 'medium' ? '🟡' : '🟢'}
                       </span>
-                      <div className="flex-1">
-                        <h4 className="font-bold text-xl mb-2">
-                          {f.title || f.description || 'Security Issue'}
-                        </h4>
-                        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-semibold uppercase">
-                          {f.severity || 'Unknown'} Severity
-                        </span>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-sm truncate">{f.title || f.description || 'Security Issue'}</h4>
+                        <p className="text-xs text-gray-600 uppercase">{f.severity || 'Unknown'}</p>
                       </div>
+                      <span className="text-gray-400 text-xl">🔒</span>
                     </div>
-                    <div className="pl-14 space-y-3">
-                      <div>
-                        <h5 className="font-semibold text-sm uppercase text-gray-600 mb-1">Description</h5>
-                        <p className="text-gray-700">{f.description || f.title || 'Security vulnerability detected'}</p>
-                      </div>
-                      <div>
-                        <h5 className="font-semibold text-sm uppercase text-gray-600 mb-1">Recommended Fix</h5>
-                        <p className="text-gray-700">Implement proper input validation, sanitization, and security headers to prevent this vulnerability.</p>
-                      </div>
-                      <div>
-                        <h5 className="font-semibold text-sm uppercase text-gray-600 mb-1">Priority</h5>
-                        <p className="text-gray-700">{f.severity?.toLowerCase() === 'critical' || f.severity?.toLowerCase() === 'high' ? 'Fix immediately before launch' : 'Address in next sprint'}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
+            )}
+
+            {/* Unlock CTA */}
+            {showEmailGate && !unlocked && (
+              <div className="bg-yellow-50 border-2 border-yellow-600 rounded-xl p-8 text-center">
+                <span className="text-5xl mb-4 block">🔓</span>
+                <h3 className="text-2xl font-bold mb-2">Unlock Full Report</h3>
+                <p className="text-gray-700 mb-6">
+                  Get detailed fixes and step-by-step remediation for all {report.findings?.length || 0} vulnerabilities
+                </p>
+                <form onSubmit={handleEmailUnlock} className="max-w-md mx-auto">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    required
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none mb-3"
+                  />
+                  <button
+                    type="submit"
+                    className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold"
+                  >
+                    Get Free Full Report
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Details Tab */}
+        {currentTab === 'details' && unlocked && report && (
+          <div className="space-y-6">
+            <div className="bg-green-50 border-2 border-green-600 rounded-xl p-6 text-center">
+              <span className="text-5xl mb-3 block">✅</span>
+              <h2 className="text-2xl font-bold">Report Unlocked!</h2>
+              <p className="text-gray-600">Detailed remediation instructions below</p>
             </div>
-          )}
-        </div>
-      )}
+
+            {report.summary && (
+              <div className="bg-white border-2 border-gray-900 rounded-xl p-6">
+                <h3 className="text-lg font-bold mb-3">Executive Summary</h3>
+                <p className="text-gray-700 leading-relaxed">{report.summary}</p>
+              </div>
+            )}
+
+            {report.findings && report.findings.length > 0 && (
+              <div className="bg-white border-2 border-gray-900 rounded-xl p-6">
+                <h3 className="text-lg font-bold mb-6">Detailed Remediation Guide</h3>
+                <div className="space-y-6">
+                  {report.findings.map((f, i) => (
+                    <div key={i} className="p-5 border-2 border-gray-200 rounded-lg">
+                      <div className="flex items-start gap-3 mb-4">
+                        <span className="text-3xl">
+                          {f.severity?.toLowerCase() === 'critical' ? '🔴' : 
+                           f.severity?.toLowerCase() === 'high' ? '🟠' :
+                           f.severity?.toLowerCase() === 'medium' ? '🟡' : '🟢'}
+                        </span>
+                        <div>
+                          <h4 className="font-bold text-lg mb-1">{f.title || f.description || 'Security Issue'}</h4>
+                          <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-semibold uppercase">
+                            {f.severity || 'Unknown'} Severity
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-3 pl-11">
+                        <div>
+                          <h5 className="font-semibold text-xs uppercase text-gray-600 mb-1">Description</h5>
+                          <p className="text-sm text-gray-700">{f.description || f.title || 'Security vulnerability detected'}</p>
+                        </div>
+                        <div>
+                          <h5 className="font-semibold text-xs uppercase text-gray-600 mb-1">Recommended Fix</h5>
+                          <p className="text-sm text-gray-700">Implement proper input validation, sanitization, and security headers to prevent this vulnerability.</p>
+                        </div>
+                        <div>
+                          <h5 className="font-semibold text-xs uppercase text-gray-600 mb-1">Priority</h5>
+                          <p className="text-sm text-gray-700">
+                            {f.severity?.toLowerCase() === 'critical' || f.severity?.toLowerCase() === 'high' 
+                              ? 'Fix immediately before launch' 
+                              : 'Address in next sprint'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Footer */}
-      <div className="bg-black text-white py-12 mt-20">
-        <div className="max-w-6xl mx-auto px-4 text-center">
-          <p className="text-gray-400">© 2025 VibeCode Audit</p>
+      <div className="border-t border-gray-200 mt-20">
+        <div className="max-w-4xl mx-auto px-4 py-6 text-center">
+          <p className="text-sm text-gray-500">© 2025 VibeCode Audit</p>
         </div>
       </div>
     </div>
