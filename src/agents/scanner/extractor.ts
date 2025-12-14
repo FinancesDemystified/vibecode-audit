@@ -13,6 +13,12 @@ export interface SecurityData {
     xFrameOptions?: string;
     xContentTypeOptions?: string;
     strictTransportSecurity?: string;
+    referrerPolicy?: string;
+    permissionsPolicy?: string;
+    server?: string;
+    xPoweredBy?: string;
+    xAspNetVersion?: string;
+    xAspNetMvcVersion?: string;
   };
   technologies: string[];
   techStack: {
@@ -26,6 +32,10 @@ export interface SecurityData {
     hasSignupForm: boolean;
     authEndpoints: string[];
     oauthProviders: string[];
+    authLibrary?: string; // Clerk, BetterAuth, NextAuth, Auth0, Supabase, etc. (detected from scripts)
+    socialProviders: string[]; // Google, GitHub, Facebook, etc. (detected from buttons/links)
+    has2FA: boolean; // 2FA/MFA mentioned in UI/scripts (NOT enforcement - we can't verify requirement)
+    loginAttempted?: boolean; // Set in worker if credentials provided and login was attempted
   };
   forms: Array<{
     action: string;
@@ -59,6 +69,12 @@ export async function extractSecurityData(
     xFrameOptions: crawl.headers['x-frame-options'],
     xContentTypeOptions: crawl.headers['x-content-type-options'],
     strictTransportSecurity: crawl.headers['strict-transport-security'],
+    referrerPolicy: crawl.headers['referrer-policy'],
+    permissionsPolicy: crawl.headers['permissions-policy'],
+    server: crawl.headers['server'],
+    xPoweredBy: crawl.headers['x-powered-by'],
+    xAspNetVersion: crawl.headers['x-aspnet-version'],
+    xAspNetMvcVersion: crawl.headers['x-aspnetmvc-version'],
   };
 
   await eventBus.publish(jobId, {
@@ -125,14 +141,17 @@ export async function extractSecurityData(
     hasSignupForm: false,
     authEndpoints: [] as string[],
     oauthProviders: [] as string[],
+    authLibrary: undefined as string | undefined,
+    socialProviders: [] as string[],
+    has2FA: false,
   };
   
   const htmlLower = crawl.html.toLowerCase();
   
   // Parse actual form elements for login/signup
-  const formRegex = /<form[^>]*>(.*?)<\/form>/gis;
+  const formContentRegex = /<form[^>]*>(.*?)<\/form>/gis;
   let formMatch;
-  while ((formMatch = formRegex.exec(crawl.html)) !== null) {
+  while ((formMatch = formContentRegex.exec(crawl.html)) !== null) {
     const formContent = formMatch[1].toLowerCase();
     const hasPassword = formContent.includes('type="password"') || formContent.includes("type='password'");
     const hasEmail = formContent.includes('type="email"') || formContent.includes("type='email'") || formContent.includes('name="email"') || formContent.includes("name='email'");
@@ -172,53 +191,96 @@ export async function extractSecurityData(
     authFlow.authEndpoints.push(apiMatch[1]);
   }
   
-  // Detect modern auth providers
-  if (crawl.techStack.scripts.some(s => s.includes('clerk'))) {
-    authFlow.oauthProviders.push('Clerk');
-  }
-  if (crawl.techStack.scripts.some(s => s.includes('auth0'))) {
-    authFlow.oauthProviders.push('Auth0');
-  }
-  if (crawl.techStack.scripts.some(s => s.includes('supabase') && s.includes('auth'))) {
-    authFlow.oauthProviders.push('Supabase Auth');
-  }
-  if (crawl.techStack.scripts.some(s => s.includes('next-auth'))) {
-    authFlow.oauthProviders.push('NextAuth');
+  // Detect auth libraries (distinct from OAuth providers)
+  const scriptsLower = crawl.techStack.scripts.map(s => s.toLowerCase());
+  
+  if (scriptsLower.some(s => s.includes('clerk') || s.includes('clerk.dev') || s.includes('clerk.com'))) {
+    authFlow.authLibrary = 'Clerk';
+  } else if (scriptsLower.some(s => s.includes('better-auth') || s.includes('betterauth'))) {
+    authFlow.authLibrary = 'BetterAuth';
+  } else if (scriptsLower.some(s => s.includes('next-auth') || s.includes('nextauth'))) {
+    authFlow.authLibrary = 'NextAuth.js';
+  } else if (scriptsLower.some(s => s.includes('auth0'))) {
+    authFlow.authLibrary = 'Auth0';
+  } else if (scriptsLower.some(s => s.includes('supabase') && (s.includes('auth') || s.includes('supabase.auth')))) {
+    authFlow.authLibrary = 'Supabase Auth';
+  } else if (scriptsLower.some(s => s.includes('firebase') && s.includes('auth'))) {
+    authFlow.authLibrary = 'Firebase Auth';
+  } else if (scriptsLower.some(s => s.includes('passport.js') || s.includes('passportjs'))) {
+    authFlow.authLibrary = 'Passport.js';
+  } else if (htmlLower.includes('kinde') || scriptsLower.some(s => s.includes('kinde'))) {
+    authFlow.authLibrary = 'Kinde';
+  } else if (htmlLower.includes('lucia') || scriptsLower.some(s => s.includes('lucia-auth'))) {
+    authFlow.authLibrary = 'Lucia';
   }
   
-  // Detect OAuth providers from buttons, links, and scripts
-  const oauthButtonRegex = /<[^>]*(?:button|a)[^>]*(?:google|facebook|github|twitter|microsoft|apple)[^>]*>/gi;
+  // Also add to oauthProviders for backward compatibility
+  if (authFlow.authLibrary) {
+    authFlow.oauthProviders.push(authFlow.authLibrary);
+  }
+  
+  // Detect social OAuth providers (separate from auth libraries)
+  const oauthButtonRegex = /<[^>]*(?:button|a)[^>]*(?:google|facebook|github|twitter|microsoft|apple|discord|linkedin|spotify|twitch)[^>]*>/gi;
   let oauthMatch;
-  const foundProviders = new Set<string>();
+  const foundSocialProviders = new Set<string>();
   while ((oauthMatch = oauthButtonRegex.exec(crawl.html)) !== null) {
     const buttonText = oauthMatch[0].toLowerCase();
-    if (buttonText.includes('google')) foundProviders.add('Google');
-    if (buttonText.includes('facebook')) foundProviders.add('Facebook');
-    if (buttonText.includes('github')) foundProviders.add('GitHub');
-    if (buttonText.includes('twitter') || buttonText.includes('x.com')) foundProviders.add('Twitter/X');
-    if (buttonText.includes('microsoft')) foundProviders.add('Microsoft');
-    if (buttonText.includes('apple')) foundProviders.add('Apple');
+    if (buttonText.includes('google')) foundSocialProviders.add('Google');
+    if (buttonText.includes('facebook')) foundSocialProviders.add('Facebook');
+    if (buttonText.includes('github')) foundSocialProviders.add('GitHub');
+    if (buttonText.includes('twitter') || buttonText.includes('x.com')) foundSocialProviders.add('Twitter/X');
+    if (buttonText.includes('microsoft')) foundSocialProviders.add('Microsoft');
+    if (buttonText.includes('apple')) foundSocialProviders.add('Apple');
+    if (buttonText.includes('discord')) foundSocialProviders.add('Discord');
+    if (buttonText.includes('linkedin')) foundSocialProviders.add('LinkedIn');
+    if (buttonText.includes('spotify')) foundSocialProviders.add('Spotify');
+    if (buttonText.includes('twitch')) foundSocialProviders.add('Twitch');
   }
   
-  // Check for OAuth scripts
-  if (crawl.techStack.scripts.some(s => s.includes('google-signin') || s.includes('gapi'))) {
-    foundProviders.add('Google');
+  // Check for OAuth scripts and API endpoints
+  if (scriptsLower.some(s => s.includes('google-signin') || s.includes('gapi') || s.includes('accounts.google.com'))) {
+    foundSocialProviders.add('Google');
   }
-  if (crawl.techStack.scripts.some(s => s.includes('facebook') && s.includes('sdk'))) {
-    foundProviders.add('Facebook');
+  if (scriptsLower.some(s => s.includes('facebook') && (s.includes('sdk') || s.includes('connect')))) {
+    foundSocialProviders.add('Facebook');
   }
-  if (crawl.techStack.scripts.some(s => s.includes('github') && s.includes('oauth'))) {
-    foundProviders.add('GitHub');
+  if (scriptsLower.some(s => s.includes('github') && (s.includes('oauth') || s.includes('github.com/login')))) {
+    foundSocialProviders.add('GitHub');
+  }
+  if (scriptsLower.some(s => s.includes('microsoft') && s.includes('login'))) {
+    foundSocialProviders.add('Microsoft');
+  }
+  if (scriptsLower.some(s => s.includes('apple') && s.includes('signin'))) {
+    foundSocialProviders.add('Apple');
   }
   
   // Check for OAuth callback URLs
-  if (crawl.html.match(/\/auth\/(?:callback|redirect|google|facebook|github)/i)) {
-    if (!foundProviders.has('Google') && htmlLower.includes('google')) foundProviders.add('Google');
-    if (!foundProviders.has('Facebook') && htmlLower.includes('facebook')) foundProviders.add('Facebook');
-    if (!foundProviders.has('GitHub') && htmlLower.includes('github')) foundProviders.add('GitHub');
+  const callbackRegex = /\/auth\/(?:callback|redirect|google|facebook|github|microsoft|apple|discord|linkedin)/i;
+  if (crawl.html.match(callbackRegex)) {
+    if (htmlLower.includes('google')) foundSocialProviders.add('Google');
+    if (htmlLower.includes('facebook')) foundSocialProviders.add('Facebook');
+    if (htmlLower.includes('github')) foundSocialProviders.add('GitHub');
+    if (htmlLower.includes('microsoft')) foundSocialProviders.add('Microsoft');
+    if (htmlLower.includes('apple')) foundSocialProviders.add('Apple');
+    if (htmlLower.includes('discord')) foundSocialProviders.add('Discord');
+    if (htmlLower.includes('linkedin')) foundSocialProviders.add('LinkedIn');
   }
   
-  authFlow.oauthProviders.push(...Array.from(foundProviders));
+  authFlow.socialProviders = Array.from(foundSocialProviders);
+  authFlow.oauthProviders.push(...authFlow.socialProviders);
+  
+  // Detect 2FA/MFA mentions (NOT enforcement - we can only see if it's mentioned in UI/scripts)
+  // Note: This detects mentions, not actual requirement. Could be marketing, optional feature, or documentation.
+  const twoFactorIndicators = [
+    'two-factor', '2fa', 'mfa', 'multi-factor', 'totp', 'authenticator',
+    'verification code', 'security code', 'sms code', 'backup code',
+    'time-based one-time', 'google authenticator', 'authy', 'duo'
+  ];
+  authFlow.has2FA = twoFactorIndicators.some(indicator => 
+    htmlLower.includes(indicator) || 
+    scriptsLower.some(s => s.includes(indicator)) ||
+    crawl.techStack.metaTags && Object.values(crawl.techStack.metaTags).some(v => v.toLowerCase().includes(indicator))
+  );
 
   const cookieHeader = crawl.headers['set-cookie'];
   const cookies: SecurityData['cookies'] = [];

@@ -11,7 +11,10 @@ export async function rateLimitMiddleware(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  // Get IP from various sources (Railway proxy, direct, forwarded)
+  const forwardedFor = req.headers['x-forwarded-for'] as string;
+  const realIp = req.headers['x-real-ip'] as string;
+  const ip = forwardedFor?.split(',')[0]?.trim() || realIp || req.ip || req.socket.remoteAddress || 'unknown';
   
   // Check if IP is whitelisted (comma-separated list)
   const whitelist = process.env.RATE_LIMIT_WHITELIST?.split(',').map(ip => ip.trim()) || [];
@@ -20,6 +23,7 @@ export async function rateLimitMiddleware(
   if (isWhitelisted) {
     res.setHeader('X-RateLimit-Limit', 'unlimited');
     res.setHeader('X-RateLimit-Remaining', 'unlimited');
+    res.setHeader('X-RateLimit-Whitelisted', 'true');
     next();
     return;
   }

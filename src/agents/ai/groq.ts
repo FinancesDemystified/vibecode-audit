@@ -57,15 +57,25 @@ function ruleBasedScoring(findings: Finding[]): Analysis {
   score -= lowCount * 0.1;
   score = Math.max(1, Math.min(10, Math.round(score)));
 
+  const summary = findings.length > 0
+    ? `Found ${findings.length} concrete security issues: ${criticalCount} critical, ${highCount} high, ${mediumCount} medium, ${lowCount} low`
+    : 'No concrete security vulnerabilities detected in this scan.';
+
   return {
     score,
-    summary: `Found ${findings.length} security issues: ${criticalCount} critical, ${highCount} high, ${mediumCount} medium, ${lowCount} low`,
-    recommendations: findings.slice(0, 5).map((f) => ({
-      priority: f.severity === 'critical' || f.severity === 'high' ? 'high' : 'medium',
-      action: f.recommendation,
-      effort: 'medium',
-    })),
-    confidence: 0.7,
+    summary,
+    recommendations: findings.length > 0
+      ? findings.slice(0, 5).map((f) => ({
+          priority: f.severity === 'critical' || f.severity === 'high' ? 'high' : f.severity === 'medium' ? 'medium' : 'low',
+          action: f.recommendation,
+          effort: 'medium',
+        }))
+      : [
+          { priority: 'medium', action: 'Implement HSTS header for HTTPS enforcement', effort: 'low' },
+          { priority: 'medium', action: 'Add Content-Security-Policy header to prevent XSS', effort: 'medium' },
+          { priority: 'low', action: 'Review and implement additional OWASP security headers', effort: 'low' },
+        ],
+    confidence: findings.length > 0 ? 0.9 : 0.7,
   };
 }
 
@@ -82,33 +92,35 @@ export async function analyzeWithAI(
     timestamp: Date.now(),
   });
 
-  const prompt = `You are an expert security auditor analyzing a web application for a solo founder. Write in a professional yet accessible narrative style, similar to a consulting report.
+  const prompt = `You are an expert security auditor analyzing a web application. Base your analysis ONLY on concrete findings - no inference or speculation.
 
 Context:
 - URL scanned: External black-box analysis only (no codebase access)
-- Tech Stack: ${data.techStack.framework || 'Likely static site or SSG (framework not identified)'} ${data.techStack.hosting ? `on ${data.techStack.hosting}` : data.techStack.server ? ` (server: ${data.techStack.server})` : ''}${data.techStack.platform ? ` (built with ${data.techStack.platform})` : ''}
-- Technologies: ${data.technologies.length > 0 ? data.technologies.join(', ') : 'Minimal JavaScript detected (likely static site)'}
-- Auth Flow: ${data.authFlow.hasLoginForm ? 'Login form detected' : data.authFlow.oauthProviders.length > 0 ? 'OAuth authentication detected (no traditional login form)' : 'No authentication mechanisms detected (public site or auth not accessible)'}${data.authFlow.oauthProviders.length > 0 ? ` with ${data.authFlow.oauthProviders.join(', ')} OAuth` : ''}${data.authFlow.authEndpoints.length > 0 ? ` (auth endpoints: ${data.authFlow.authEndpoints.slice(0, 3).join(', ')})` : ''}
+- Tech Stack: ${data.techStack.framework || 'Unknown'} ${data.techStack.hosting ? `on ${data.techStack.hosting}` : ''}${data.techStack.platform ? ` (built with ${data.techStack.platform})` : ''}
+- Technologies: ${data.technologies.length > 0 ? data.technologies.join(', ') : 'None detected'}
+- Auth Flow: ${data.authFlow.hasLoginForm ? 'Login form detected' : data.authFlow.oauthProviders.length > 0 ? `OAuth detected: ${data.authFlow.oauthProviders.join(', ')}` : 'No auth mechanisms detected'}${data.authFlow.authEndpoints.length > 0 ? ` (endpoints: ${data.authFlow.authEndpoints.slice(0, 3).join(', ')})` : ''}
 
-Security Findings:
-${findings.map((f, i) => `${i + 1}. [${f.severity.toUpperCase()}] ${f.type}: ${f.evidence}\n   Recommendation: ${f.recommendation}`).join('\n\n')}
+Security Findings (CONCRETE ONLY - ${findings.length} found):
+${findings.length > 0 ? findings.map((f, i) => `${i + 1}. [${f.severity.toUpperCase()}] ${f.type}: ${f.evidence}\n   Recommendation: ${f.recommendation}`).join('\n\n') : 'No concrete security vulnerabilities detected.'}
 
 Your task:
-1. **Security Score (1-10)**: Rate overall security posture
-2. **Executive Summary**: 2-3 sentences explaining the key issues and context (mention the tech stack, what's good, what needs work). NEVER say "Not detected" - instead provide inferences like "likely static site", "appears to be a [framework]", or "authentication not accessible from public pages"
-3. **Detailed Recommendations**: Provide 5 specific, actionable recommendations with:
-   - Priority (High/Medium/Low)
-   - Action (specific step to take)
-   - Effort (Low/Medium/High)
-4. **Confidence**: Your confidence in this assessment (0-1)
+1. **Security Score (1-10)**: Calculate based ONLY on findings count and severity:
+   - Start at 10
+   - Critical: -3 each
+   - High: -1.5 each
+   - Medium: -0.5 each
+   - Low: -0.1 each
+   - Round to nearest integer, min 1, max 10
+2. **Executive Summary**: 2-3 sentences describing the concrete findings. If no findings, state "No concrete security vulnerabilities detected in this scan."
+3. **Detailed Recommendations**: Generate recommendations ONLY from the findings list above. If no findings, provide 3 general best practices.
+4. **Confidence**: 0.9 if findings present, 0.7 if no findings (limited scan scope)
 
-Write in a tone that's authoritative but encouraging—these are solo founders who need guidance, not criticism.
-IMPORTANT: Never use phrases like "Not detected" or "Unknown". Instead, provide intelligent inferences based on available evidence (e.g., "likely static site", "appears to use SSG", "authentication not accessible from public pages").
+CRITICAL: Only reference concrete findings. Do not infer or speculate about risks not found.
 
 Format as JSON: 
 {
   "score": number,
-  "summary": "string (narrative style, mention tech stack with inferences, never say 'Not detected')",
+  "summary": "string (describe concrete findings only)",
   "recommendations": [
     {"priority": "High|Medium|Low", "action": "specific actionable step", "effort": "Low|Medium|High"}
   ],

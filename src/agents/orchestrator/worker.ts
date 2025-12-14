@@ -10,6 +10,7 @@ import { extractSecurityData } from '../scanner/extractor';
 import { discoverPostAuth } from '../scanner/post-auth-discoverer';
 import { performAuthenticatedScan } from '../scanner/authenticated-crawler';
 import { scanVulnerabilities } from '../analyzer/vulnerability';
+import { analyzeSEO } from '../analyzer/seo';
 import { analyzeWithAI } from '../ai/groq';
 import { generateReport } from '../reporter/generator';
 import { eventBus } from '../communication';
@@ -63,6 +64,7 @@ export function createWorker(queueName: string = 'scan-queue') {
         const crawlResult = await crawlUrl(url, eventBus, jobId);
         const securityData = await extractSecurityData(crawlResult, eventBus, jobId);
         const postAuthData = await discoverPostAuth(url, securityData, crawlResult.html, eventBus, jobId);
+        const seoData = await analyzeSEO(crawlResult, eventBus, jobId);
 
         // If credentials provided, perform authenticated scan
         let authenticatedScan = null;
@@ -98,8 +100,12 @@ export function createWorker(queueName: string = 'scan-queue') {
           server: ts.server || 'Server not identified',
         });
 
-        // Format auth flow - keep structure but provide better defaults in report display
-        const formatAuthFlow = (af: typeof securityData.authFlow) => af;
+        // Format auth flow - add login attempt tracking
+        // Note: has2FA indicates mentions found in UI/scripts, NOT actual enforcement requirement
+        const formatAuthFlow = (af: typeof securityData.authFlow) => ({
+          ...af,
+          loginAttempted: credentials && (credentials.password || credentials.username || credentials.email) ? true : false,
+        });
 
         const report = {
           jobId,
@@ -129,6 +135,18 @@ export function createWorker(queueName: string = 'scan-queue') {
             apiEndpoints: authenticatedScan.apiEndpoints,
             errors: authenticatedScan.errors,
           } : null,
+          seo: {
+            metaTags: seoData.metaTags,
+            openGraph: seoData.openGraph,
+            twitterCard: seoData.twitterCard,
+            structuredData: {
+              hasJsonLd: seoData.structuredData.jsonLd.length > 0,
+              hasMicrodata: seoData.structuredData.microdata,
+              schemaTypes: seoData.structuredData.schemaTypes,
+            },
+            aiOptimization: seoData.aiOptimization,
+            issues: seoData.issues,
+          },
           metadata: {
             version: '1.0.0',
             scanDuration: Date.now() - (job?.createdAt || Date.now()),

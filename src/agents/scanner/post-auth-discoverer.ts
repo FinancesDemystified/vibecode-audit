@@ -171,6 +171,7 @@ export async function discoverPostAuth(
   });
 
   // Test common protected endpoints (without auth)
+  // Only flag as issue if it's actually an API response, not SPA route rewrite
   const testPaths = ['/api/users', '/api/user', '/api/me', '/dashboard', '/admin'];
   
   for (const path of testPaths) {
@@ -181,10 +182,22 @@ export async function discoverPostAuth(
         redirect: 'manual',
       });
       
-      // If we get 200 OK without auth, that's a problem
       if (response.status === 200) {
-        result.publiclyAccessibleProtected.push(path);
-        result.securityIssues.push(`Potential auth bypass: ${path} accessible without authentication`);
+        const contentType = response.headers.get('content-type') || '';
+        const text = await response.text();
+        
+        // Check if it's a SPA rewrite (HTML response) vs actual API (JSON)
+        const isSPARewrite = 
+          contentType.includes('text/html') ||
+          text.trim().startsWith('<!DOCTYPE') ||
+          text.trim().startsWith('<html') ||
+          (text.includes('<title>') && text.length > 1000); // Large HTML = likely index.html
+        
+        // Only flag if it's JSON/API response, not HTML rewrite
+        if (!isSPARewrite && (contentType.includes('application/json') || text.trim().startsWith('{'))) {
+          result.publiclyAccessibleProtected.push(path);
+          result.securityIssues.push(`Potential auth bypass: ${path} returns API data without authentication`);
+        }
       }
     } catch {
       // Expected - endpoint might not exist
@@ -206,7 +219,7 @@ export async function discoverPostAuth(
   }
 
   if (result.publiclyAccessibleProtected.length > 0) {
-    result.recommendations.push('URGENT: Fix auth bypass vulnerabilities - protected routes are publicly accessible');
+    result.recommendations.push('URGENT: Fix auth bypass vulnerabilities - API endpoints are returning data without authentication');
   }
 
   if (result.dashboardIndicators.found && !result.publiclyAccessibleProtected.includes('/dashboard')) {
