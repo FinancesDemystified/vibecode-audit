@@ -126,10 +126,10 @@ export default function Home() {
         <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow mb-6">
           <div className="flex gap-2">
             <input
-              type="url"
+              type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://example.com"
+              placeholder="example.com"
               required
               className="flex-1 px-4 py-2 border rounded-lg"
               disabled={loading}
