@@ -13,6 +13,7 @@ import { scanVulnerabilities } from '../analyzer/vulnerability';
 import { analyzeSEO } from '../analyzer/seo';
 import { copyAnalyzer } from '../analyzer/copy';
 import { performDeepSecurityAnalysis } from '../analyzer/deep-security';
+import { scanVibeCodingVulnerabilities } from '../analyzer/vibe-coding-vulnerabilities';
 import { analyzeWithAI } from '../ai/groq';
 import { generateReport } from '../reporter/generator';
 import { eventBus } from '../communication';
@@ -114,6 +115,23 @@ export function createWorker(queueName: string = 'scan-queue') {
           credentials
         );
         
+        // Vibe-coding specific vulnerability scan
+        await eventBus.publish(jobId, {
+          type: 'agent.progress',
+          agent: 'vibe-coding-vulnerabilities',
+          jobId,
+          timestamp: Date.now(),
+          progress: 65,
+          message: 'Scanning for vibe-coding vulnerabilities',
+        });
+        const vibeCodingVulns = await scanVibeCodingVulnerabilities(
+          url,
+          crawlResult,
+          securityData,
+          eventBus,
+          jobId
+        );
+        
         const analysis = await analyzeWithAI(findings, securityData, eventBus, jobId);
 
         await updateJobStatus(jobId, 'generating');
@@ -187,6 +205,17 @@ export function createWorker(queueName: string = 'scan-queue') {
             claimVerification: deepSecurityAnalysis.claimVerification,
             recommendations: deepSecurityAnalysis.recommendations,
             overallScore: deepSecurityAnalysis.overallScore,
+          },
+          vibeCodingVulnerabilities: {
+            hardCodedSecrets: vibeCodingVulns.hardCodedSecrets,
+            clientSideAuth: vibeCodingVulns.clientSideAuth,
+            unauthenticatedApiAccess: vibeCodingVulns.unauthenticatedApiAccess,
+            backendMisconfigurations: vibeCodingVulns.backendMisconfigurations,
+            fileUploadVulnerabilities: vibeCodingVulns.fileUploadVulnerabilities,
+            backendLessPatterns: vibeCodingVulns.backendLessPatterns,
+            recommendations: vibeCodingVulns.recommendations,
+            overallRisk: vibeCodingVulns.overallRisk,
+            score: vibeCodingVulns.score,
           },
           metadata: {
             version: '1.0.0',
