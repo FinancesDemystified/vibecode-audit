@@ -15,9 +15,31 @@ import { redis } from './lib/redis';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// CORS configuration
+const allowedOrigins = [
+  'https://vibecodeaudit.app',
+  'http://localhost:3000',
+  'http://localhost:3001',
+];
+
 app.disable('x-powered-by');
 app.use(securityHeadersMiddleware);
-app.use(cors());
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 
 app.use(
