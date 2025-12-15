@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+src/
+drizzle/
+test-*.ts
+*.py
+context/
+VIBE-CODING-VULNERABILITY-COVERAGE.md
+godlydeeds-deep-security-analysis.md
