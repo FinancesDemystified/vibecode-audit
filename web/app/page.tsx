@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 interface ScanResponse {
@@ -60,17 +60,32 @@ export default function Home() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [status, setStatus] = useState('');
   const [report, setReport] = useState<Report | null>(null);
+  const [preview, setPreview] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showEmailGate, setShowEmailGate] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [email, setEmail] = useState('');
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const [currentTab, setCurrentTab] = useState<'scan' | 'results' | 'details'>('scan');
   const [expandedIssues, setExpandedIssues] = useState<Set<number>>(new Set());
   const [showAllIssues, setShowAllIssues] = useState(false);
   const [selectedSeverity, setSelectedSeverity] = useState<string | null>(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vibecode-audit-production.up.railway.app';
+
+  // Check for token in URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const urlJobId = params.get('jobId');
+    
+    if (token && urlJobId) {
+      setJobId(urlJobId);
+      verifyAccessToken(urlJobId, token);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,6 +166,20 @@ export default function Home() {
 
   const fetchReport = async (id: string) => {
     try {
+      // First try to get preview (no auth required)
+      const previewRes = await fetch(
+        `${API_URL}/api/trpc/scan.preview?input=${encodeURIComponent(JSON.stringify({ jobId: id }))}`
+      );
+      
+      if (previewRes.ok) {
+        const data = await previewRes.json();
+        setPreview(data.result?.data);
+        setShowEmailGate(true);
+        setCurrentTab('results');
+        return;
+      }
+
+      // Fallback to old report endpoint
       const res = await fetch(
         `${API_URL}/api/trpc/scan.report?input=${encodeURIComponent(JSON.stringify({ jobId: id }))}`
       );
@@ -161,6 +190,8 @@ export default function Home() {
         setCurrentTab('results');
         return;
       }
+
+      // Try REST endpoint
       const restRes = await fetch(`${API_URL}/api/report/${id}`);
       if (restRes.ok) {
         setReport(await restRes.json());
@@ -174,12 +205,59 @@ export default function Home() {
     }
   };
 
-  const handleEmailUnlock = (e: React.FormEvent) => {
+  const handleEmailUnlock = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
+    if (!email || !jobId) return;
+
+    setEmailSending(true);
+    setError('');
+
+    try {
+      const res = await fetch(`${API_URL}/api/trpc/scan.requestAccess`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          jobId, 
+          email 
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to send email');
+      }
+
+      const data = await res.json();
+      setEmailSent(true);
+      setShowEmailGate(false);
+
+      // In dev mode, if we get a token back, auto-unlock
+      if (data.result?.data?.accessToken) {
+        await verifyAccessToken(jobId, data.result.data.accessToken);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send email');
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
+  const verifyAccessToken = async (jId: string, token: string) => {
+    try {
+      const res = await fetch(
+        `${API_URL}/api/trpc/scan.verifyAccess?input=${encodeURIComponent(JSON.stringify({ jobId: jId, token }))}`
+      );
+
+      if (!res.ok) {
+        throw new Error('Invalid or expired access token');
+      }
+
+      const data = await res.json();
+      setReport(data.result?.data);
       setUnlocked(true);
       setShowEmailGate(false);
       setCurrentTab('details');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to verify access token');
     }
   };
 
@@ -459,9 +537,9 @@ export default function Home() {
                         <p className="text-sm text-gray-600 mt-2">That could shut you down</p>
                       </div>
                       <div className="bg-red-50 rounded-2xl p-6">
-                        <div className="text-5xl font-bold text-red-600 mb-2">$300+</div>
-                        <p className="text-gray-700 font-medium">typical cost from one leak</p>
-                        <p className="text-sm text-gray-600 mt-2">Before you even launch</p>
+                        <div className="text-5xl font-bold text-red-600 mb-2">1 in 10</div>
+                        <p className="text-gray-700 font-medium">apps copy the same critical flaw</p>
+                        <p className="text-sm text-gray-600 mt-2">AI replicates vulnerabilities</p>
                       </div>
                     </div>
                   </div>
@@ -607,7 +685,7 @@ export default function Home() {
                       </h2>
                       <div className="space-y-4 text-lg text-red-50 leading-relaxed">
                         <p>
-                          Unchecked security problems lead to data leaks, <span className="font-semibold">$300+ bills from exposed API keys</span>, 
+                          Unchecked security problems lead to data leaks, <span className="font-semibold">exposed API keys causing thousands in unauthorized charges</span>, 
                           database breaches, regulatory violations, and reputation damage.
                         </p>
                         <p>
@@ -673,7 +751,7 @@ export default function Home() {
         )}
 
         {/* Results Tab */}
-        {currentTab === 'results' && report && (
+        {currentTab === 'results' && (preview || report) && (
           <div className="space-y-8 max-w-4xl mx-auto">
             {/* Score Card - Compact */}
             <div className="bg-gradient-to-br from-red-600 to-red-700 text-white rounded-xl p-6 shadow-lg">
@@ -681,22 +759,156 @@ export default function Home() {
                 <div>
                   <p className="text-xs uppercase tracking-wider opacity-90 mb-1">Security Score</p>
                   <div className="text-4xl font-bold">
-                    {report.score || 0}<span className="text-2xl opacity-75">/10</span>
+                    {(preview?.score || report?.score || 0)}<span className="text-2xl opacity-75">/10</span>
                   </div>
                 </div>
                 <div className="flex gap-6">
                   <div className="text-center">
-                    <div className="text-xl font-bold">{report.findings?.length || 0}</div>
+                    <div className="text-xl font-bold">
+                      {preview?.findingsSummary?.total || report?.findings?.length || 0}
+                    </div>
                     <div className="text-xs opacity-90">Issues</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-xl font-bold">{criticalFindings.length}</div>
+                    <div className="text-xl font-bold">
+                      {preview?.findingsSummary?.critical || criticalFindings.length}
+                    </div>
                     <div className="text-xs opacity-90">Critical</div>
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Preview Mode - Show limited info */}
+            {preview && !unlocked && (
+              <>
+                <div className="bg-yellow-50 border-2 border-yellow-400 rounded-xl p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
+                    <span>🔍</span>
+                    <span>Security Issues Found</span>
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className="bg-white rounded-lg p-4 text-center">
+                      <div className="text-3xl font-bold text-red-600">{preview.findingsSummary?.critical || 0}</div>
+                      <div className="text-sm text-gray-600">Critical</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 text-center">
+                      <div className="text-3xl font-bold text-orange-600">{preview.findingsSummary?.high || 0}</div>
+                      <div className="text-sm text-gray-600">High</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 text-center">
+                      <div className="text-3xl font-bold text-yellow-600">{preview.findingsSummary?.medium || 0}</div>
+                      <div className="text-sm text-gray-600">Medium</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 text-center">
+                      <div className="text-3xl font-bold text-green-600">{preview.findingsSummary?.low || 0}</div>
+                      <div className="text-sm text-gray-600">Low</div>
+                    </div>
+                  </div>
+
+                  <p className="text-gray-700 mb-4">
+                    We found <strong>{preview.findingsSummary?.total || 0} security issues</strong> in your application,
+                    including <strong>{preview.findingsSummary?.critical || 0} critical</strong> and{' '}
+                    <strong>{preview.findingsSummary?.high || 0} high-severity</strong> problems.
+                  </p>
+
+                  {/* Vague issue previews */}
+                  {preview.findingsSummary?.preview && preview.findingsSummary.preview.length > 0 && (
+                    <div className="space-y-2 mb-4">
+                      <p className="font-semibold text-gray-900">Issues include:</p>
+                      <ul className="space-y-1">
+                        {preview.findingsSummary.preview.map((f: any, i: number) => (
+                          <li key={i} className="flex items-center gap-2 text-gray-700">
+                            <span className={`w-2 h-2 rounded-full ${
+                              f.severity === 'critical' ? 'bg-red-600' :
+                              f.severity === 'high' ? 'bg-orange-600' :
+                              f.severity === 'medium' ? 'bg-yellow-500' : 'bg-green-600'
+                            }`} />
+                            <span className="font-medium">{f.type}</span>
+                            <span className="text-xs px-2 py-0.5 rounded uppercase bg-gray-200 text-gray-700">
+                              {f.severity}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Vibe-coding summary */}
+                  {preview.vibeCodingSummary && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
+                      <p className="font-semibold text-purple-900 mb-2">🔍 Vibe-Coding Analysis:</p>
+                      <ul className="space-y-1 text-sm text-gray-700">
+                        {preview.vibeCodingSummary.secretsCount > 0 && (
+                          <li>• {preview.vibeCodingSummary.secretsCount} hard-coded secret(s) in frontend</li>
+                        )}
+                        {preview.vibeCodingSummary.clientSideAuthDetected && (
+                          <li>• Client-side authentication detected</li>
+                        )}
+                        {preview.vibeCodingSummary.unauthenticatedApisCount > 0 && (
+                          <li>• {preview.vibeCodingSummary.unauthenticatedApisCount} unauthenticated API endpoint(s)</li>
+                        )}
+                        {preview.vibeCodingSummary.misconfigurationsCount > 0 && (
+                          <li>• {preview.vibeCodingSummary.misconfigurationsCount} backend misconfiguration(s)</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* Email gate for preview */}
+                {!emailSent && (
+                  <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400 rounded-2xl p-8 text-center shadow-lg">
+                    <div className="w-16 h-16 bg-yellow-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-2xl font-bold mb-2 text-gray-900">Get Your Full Security Report</h3>
+                    <p className="text-gray-700 mb-2 max-w-md mx-auto">
+                      Enter your email to receive detailed evidence, specific locations, and step-by-step fix instructions for all {preview.findingsSummary?.total || 0} issues.
+                    </p>
+                    <p className="text-sm text-gray-600 mb-6">
+                      We'll send you a secure access link instantly.
+                    </p>
+                    <form onSubmit={handleEmailUnlock} className="max-w-md mx-auto">
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        required
+                        disabled={emailSending}
+                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-red-500 focus:outline-none mb-3 text-base"
+                      />
+                      <button
+                        type="submit"
+                        disabled={emailSending}
+                        className="w-full px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg transition-colors shadow-lg"
+                      >
+                        {emailSending ? 'Sending...' : 'Get Full Report →'}
+                      </button>
+                      <p className="text-xs text-gray-500 mt-3">100% free • No spam • Instant access</p>
+                    </form>
+                  </div>
+                )}
+
+                {emailSent && (
+                  <div className="bg-green-50 border-2 border-green-500 rounded-xl p-6 text-center">
+                    <div className="text-4xl mb-3">✅</div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Check Your Email!</h3>
+                    <p className="text-gray-700">
+                      We've sent a secure access link to <strong>{email}</strong>.
+                      Click the link in your email to view your full security report.
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Full Report - Only show when unlocked */}
+            {unlocked && report && (
+              <>
             {/* Critical Issues */}
             {criticalFindings.length > 0 && (
               <div className="bg-white border-2 border-red-600 rounded-xl p-6">
@@ -1010,39 +1222,8 @@ export default function Home() {
               </div>
             )}
 
-            {/* Level 5: Unlock Detailed Fixes */}
-            {showEmailGate && !unlocked && (
-              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-400 rounded-2xl p-8 text-center shadow-lg">
-                <div className="w-16 h-16 bg-yellow-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold mb-2 text-gray-900">Get Step-by-Step Fix Instructions</h3>
-                <p className="text-gray-700 mb-2 max-w-md mx-auto">
-                  You've seen what's wrong. Now get detailed, plain-English instructions on how to fix each problem.
-                </p>
-                <p className="text-sm text-gray-600 mb-6">
-                  We'll send you a complete remediation guide with platform-specific fixes for all {report.findings?.length || 0} issues.
-                </p>
-                <form onSubmit={handleEmailUnlock} className="max-w-md mx-auto">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    required
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-red-500 focus:outline-none mb-3 text-base"
-                  />
-                  <button
-                    type="submit"
-                    className="w-full px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 font-semibold text-lg transition-colors shadow-lg"
-                  >
-                    Get Free Fix Instructions →
-                  </button>
-                  <p className="text-xs text-gray-500 mt-3">100% free • No spam • Unlock instantly</p>
-                </form>
-              </div>
+            {/* Close unlocked section */}
+            </>
             )}
           </div>
         )}

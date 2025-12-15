@@ -43,8 +43,22 @@ curl https://vibecode-audit-production.up.railway.app/api/report/{jobId}
 ## Environment Variables
 
 ```bash
+# Redis
 REDIS_URL=redis://default:password@redis.railway.internal:6379
+
+# Database (Neon PostgreSQL)
+DATABASE_URL=postgresql://user:pass@host.neon.tech/dbname?sslmode=require
+
+# AI/LLM
 GROQ_API_KEY=your_groq_key
+
+# Email (Resend)
+RESEND_API_KEY=your_resend_key
+FROM_EMAIL=security@vibecodeaudit.app  # Optional, defaults to this
+WEB_URL=https://your-frontend-url.com  # For email links
+
+# Optional
+NODE_ENV=production
 ```
 
 ## Deployment
@@ -60,8 +74,48 @@ railway up --service vibecode-audit --detach
 1. Go to: https://railway.com/project/805acb24-68a8-4047-83de-6e12a4d0e66a/service/7ec240fb-6275-464f-bee7-aa1075bb3cb6
 2. Variables tab → Add:
    - `REDIS_URL` - Reference from Redis service
+   - `DATABASE_URL` - Neon PostgreSQL connection string
    - `GROQ_API_KEY` - Your Groq API key
+   - `RESEND_API_KEY` - Your Resend API key (for email access links)
+   - `FROM_EMAIL` - Sender email (optional, defaults to security@vibecodeaudit.app)
+   - `WEB_URL` - Frontend URL for email links
    - `RATE_LIMIT_WHITELIST` - Comma-separated IPs (optional, for dev)
+
+## Database Setup
+
+**Initialize Neon Database:**
+
+```bash
+# Set DATABASE_URL in your environment
+export DATABASE_URL='postgresql://...'
+
+# Generate migration files
+pnpm db:generate
+
+# Push schema to database
+pnpm db:push
+
+# (Optional) Open Drizzle Studio to view data
+pnpm db:studio
+```
+
+**Tables:**
+- `email_captures` - Email addresses, access tokens, scan metadata
+- `scan_metrics` - Scan statistics and metrics
+
+## Email-Gated Reports
+
+**Flow:**
+1. Scan completes → User sees preview (score, issue counts, vague descriptions)
+2. User enters email → Receives secure access link via Resend
+3. User clicks link → Token verified → Full report unlocked with evidence & fixes
+
+**Endpoints:**
+- `/scan.preview` - Limited report data (no auth)
+- `/scan.requestAccess` - Generates token, sends email, saves to DB
+- `/scan.verifyAccess` - Validates token, returns full report
+
+**Test email:** `npx tsx test-email.ts your@email.com`
 
 **Check Status:**
 ```bash
