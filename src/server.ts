@@ -18,6 +18,8 @@ const PORT = process.env.PORT || 3001;
 // CORS configuration
 const allowedOrigins = [
   'https://vibecodeaudit.app',
+  'https://www.vibecodeaudit.app',
+  'https://web-ai-demystified-projects.vercel.app',
   'http://localhost:3000',
   'http://localhost:3001',
 ];
@@ -28,7 +30,12 @@ app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
-    
+
+    // Allow any Vercel preview deployment
+    if (origin && origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -37,8 +44,8 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-trpc-source'],
 }));
 app.use(express.json());
 
