@@ -11,6 +11,13 @@ export const emailCaptures = pgTable('email_captures', {
   jobId: uuid('job_id').notNull(),
   accessToken: uuid('access_token').notNull().unique(),
   
+  // Lead gen fields
+  name: text('name'),
+  phone: text('phone'),
+  company: text('company'), // Website/company name
+  marketingOptIn: boolean('marketing_opt_in').default(false).notNull(),
+  productOptIn: boolean('product_opt_in').default(false).notNull(),
+  
   // App/scan details
   scannedUrl: text('scanned_url').notNull(),
   issuesFound: integer('issues_found').notNull().default(0),

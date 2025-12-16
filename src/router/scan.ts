@@ -133,6 +133,11 @@ export const scanRouter = router({
     .input(z.object({ 
       jobId: z.string().uuid(),
       email: z.string().email(),
+      name: z.string().optional(),
+      phone: z.string().optional(),
+      company: z.string().optional(),
+      marketingOptIn: z.boolean().default(false),
+      productOptIn: z.boolean().default(false),
     }))
     .mutation(async ({ input }) => {
       // Verify report exists
@@ -150,7 +155,12 @@ export const scanRouter = router({
       await redis.setex(
         `access:${accessToken}`,
         2592000,
-        JSON.stringify({ jobId: input.jobId, email: input.email, createdAt: Date.now() })
+        JSON.stringify({ 
+          jobId: input.jobId, 
+          email: input.email, 
+          name: input.name,
+          createdAt: Date.now() 
+        })
       );
 
       // Save to database
@@ -162,6 +172,11 @@ export const scanRouter = router({
           email: input.email,
           jobId: input.jobId,
           accessToken,
+          name: input.name,
+          phone: input.phone,
+          company: input.company,
+          marketingOptIn: input.marketingOptIn,
+          productOptIn: input.productOptIn,
           scannedUrl: report.url,
           issuesFound,
           criticalCount,
@@ -194,6 +209,7 @@ export const scanRouter = router({
       try {
         await sendAccessEmail({
           email: input.email,
+          name: input.name,
           jobId: input.jobId,
           accessToken,
           url: report.url,

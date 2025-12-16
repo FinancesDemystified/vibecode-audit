@@ -66,6 +66,11 @@ export default function Home() {
   const [showEmailGate, setShowEmailGate] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [company, setCompany] = useState('');
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
+  const [productOptIn, setProductOptIn] = useState(false);
   const [emailSending, setEmailSending] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [currentTab, setCurrentTab] = useState<'scan' | 'results' | 'details'>('scan');
@@ -218,7 +223,12 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           jobId, 
-          email 
+          email,
+          name: name || undefined,
+          phone: phone || undefined,
+          company: company || url || undefined,
+          marketingOptIn,
+          productOptIn,
         }),
       });
 
@@ -866,21 +876,73 @@ export default function Home() {
                     </div>
                     <h3 className="text-2xl font-bold mb-2 text-gray-900">Get Your Full Security Report</h3>
                     <p className="text-gray-700 mb-2 max-w-md mx-auto">
-                      Enter your email to receive detailed evidence, specific locations, and step-by-step fix instructions for all {preview.findingsSummary?.total || 0} issues.
+                      Get detailed evidence, specific locations, and step-by-step fix instructions for all {preview.findingsSummary?.total || 0} issues.
                     </p>
                     <p className="text-sm text-gray-600 mb-6">
                       We'll send you a secure access link instantly.
                     </p>
-                    <form onSubmit={handleEmailUnlock} className="max-w-md mx-auto">
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="your@email.com"
-                        required
-                        disabled={emailSending}
-                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-red-500 focus:outline-none mb-3 text-base"
-                      />
+                    <form onSubmit={handleEmailUnlock} className="max-w-md mx-auto text-left">
+                      <div className="space-y-3 mb-4">
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="Email *"
+                          required
+                          disabled={emailSending}
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-red-500 focus:outline-none text-base"
+                        />
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Name (optional)"
+                          disabled={emailSending}
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-red-500 focus:outline-none text-base"
+                        />
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="Phone (optional)"
+                          disabled={emailSending}
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-red-500 focus:outline-none text-base"
+                        />
+                        <input
+                          type="text"
+                          value={company}
+                          onChange={(e) => setCompany(e.target.value)}
+                          placeholder={`Company/Website (optional, default: ${url})`}
+                          disabled={emailSending}
+                          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-red-500 focus:outline-none text-base"
+                        />
+                      </div>
+                      <div className="space-y-2 mb-4">
+                        <label className="flex items-start gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={marketingOptIn}
+                            onChange={(e) => setMarketingOptIn(e.target.checked)}
+                            disabled={emailSending}
+                            className="mt-1 w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                          />
+                          <span className="text-sm text-gray-700">
+                            Send me security tips and updates <span className="text-gray-500">(recommended)</span>
+                          </span>
+                        </label>
+                        <label className="flex items-start gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={productOptIn}
+                            onChange={(e) => setProductOptIn(e.target.checked)}
+                            disabled={emailSending}
+                            className="mt-1 w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                          />
+                          <span className="text-sm text-gray-700">
+                            Notify me of new vulnerabilities for my tech stack
+                          </span>
+                        </label>
+                      </div>
                       <button
                         type="submit"
                         disabled={emailSending}
@@ -888,7 +950,7 @@ export default function Home() {
                       >
                         {emailSending ? 'Sending...' : 'Get Full Report →'}
                       </button>
-                      <p className="text-xs text-gray-500 mt-3">100% free • No spam • Instant access</p>
+                      <p className="text-xs text-gray-500 mt-3 text-center">100% free • No spam • Instant access</p>
                     </form>
                   </div>
                 )}

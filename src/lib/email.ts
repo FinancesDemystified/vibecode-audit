@@ -12,6 +12,7 @@ const WEB_URL = process.env.WEB_URL || 'http://localhost:3000';
 
 interface AccessEmailData {
   email: string;
+  name?: string;
   jobId: string;
   accessToken: string;
   url: string;
@@ -118,7 +119,8 @@ export async function sendAccessEmail(data: AccessEmailData): Promise<void> {
       <p style="margin: 0; color: #6b7280;">Your security scan results are ready</p>
     </div>
 
-    <h2>Scan Complete for ${data.url}</h2>
+    <h2>${data.name ? `Hi ${data.name},` : 'Hello,'}</h2>
+    <p>Scan Complete for ${data.url}</p>
 
     <div class="alert-box">
       <p style="margin: 0;">
