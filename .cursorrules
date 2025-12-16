@@ -14,7 +14,15 @@
 - Split large texts into context-efficient segments.
 - When summarizing or compressing data, discard non-essential details.
 - Output formats should use minimal whitespace and compact syntax.
-- README.md is the only markdown file we need, all contenxutal updates should be added here without bloating the file. 
+- README.md is the only markdown file we need, all contenxutal updates should be added here without bloating the file.
+
+#### Rule: Dependency Version Management (Critical)
+- **Pin critical dependencies**: Use exact versions (no `^` or `~`) for packages that break silently (e.g., `@tanstack/react-query`, tRPC, React)
+- **Verify node_modules**: When debugging, check `node_modules/package/package.json` version, not just `package.json` - semver ranges can resolve to incompatible versions
+- **Always verify installed versions**: Run `cat node_modules/package/package.json | grep version` to confirm what's actually installed
+- **First principles**: Don't trust `package.json` versions alone - semver ranges (`^4.36.1`) can silently install breaking versions (`4.42.0`)
+- **When adding dependencies**: Check peer dependencies and compatibility matrix before using semver ranges
+- **Example**: `"@tanstack/react-query": "4.29.19"` (pinned) not `"^4.36.1"` (allows 4.42.0 which breaks) 
 
 #### Step 1: Project Initialization & Monorepo Setup
 Set up Turborepo for scalability (share lib with web/backend). Enforces consistency from day 1.

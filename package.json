@@ -5,7 +5,9 @@
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/server.ts",
+    "dev": "cd web && npm run dev",
+    "dev:api": "tsx watch src/server.ts",
+    "dev:web": "cd web && npm run dev",
     "start": "node dist/server.js",
     "type-check": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",

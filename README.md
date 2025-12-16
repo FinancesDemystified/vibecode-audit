@@ -12,9 +12,35 @@ AI-powered security scanner: landing page → auth discovery → post-auth mappi
 
 ## Quick Start
 
+**Production**: https://vibecode-audit-production.up.railway.app (Backend API)
+
+**Frontend**: Live on Vercel (see deployment section)
+
+### Local Development
+
 ```bash
-npm install && npm run build && npm start
+# Install dependencies
+npm install
+
+# Start web dev server (from root - runs cd web && npm run dev)
+npm run dev
+
+# If macOS permission issues, try:
+npm run dev:web  # Alternative web dev command
+
+# Start backend API (requires Redis env vars)
+npm run dev:api
 ```
+
+### macOS Permission Issues
+
+If you get `EPERM: operation not permitted` errors:
+
+1. Try `npm run dev:alt` (uses port 3001)
+2. Temporarily disable macOS firewall
+3. Use `npx next dev --hostname 127.0.0.1 --port 3004`
+
+See `web/README-dev.md` for detailed troubleshooting.
 
 ## API Usage
 
@@ -154,6 +180,9 @@ curl https://vibecode-audit-production.up.railway.app/api/health
 ## Commands
 
 ```bash
+npm run dev        # Start web dev server (from root)
+npm run dev:web    # Start web dev server explicitly
+npm run dev:api    # Start backend API server
 npm run build      # Build
 npm start          # Start server
 npm run type-check # Type check
@@ -174,6 +203,12 @@ npm run type-check # Type check
 - **Root Cause**: Next.js `public/` directory is optional but Dockerfile assumed it exists
 - **Solution**: Use conditional copy: `RUN mkdir -p ./public && (cp -r /app/public/* ./public/ 2>/dev/null || true)`
 - **Prevention**: Create empty `public/.gitkeep` or make Dockerfile handle missing directories gracefully
+
+**Issue 3: Semver Range Silent Breakage**
+- **Problem**: `npm run dev` failed with `hashQueryKey is not exported` despite `package.json` showing `^4.36.1`
+- **Root Cause**: Semver `^4.36.1` allowed npm to install `4.42.0` where `hashQueryKey` was removed from exports; `@hookform/resolvers` was missing
+- **Solution**: Pin exact version `"@tanstack/react-query": "4.29.19"` and add `"@hookform/resolvers": "^3.3.4"`
+- **Prevention**: Pin critical dependencies (no `^` or `~`); verify `node_modules` matches `package.json`; always check installed versions, not just declared versions
 
 ### Templatable Architecture Pattern
 
@@ -273,6 +308,8 @@ CMD ["npm", "start"]
 **Troubleshooting Checklist:**
 
 - [ ] `package-lock.json` matches `package.json` versions
+- [ ] Verify `node_modules` versions match `package.json` (e.g., `cat node_modules/@tanstack/react-query/package.json | grep version`)
+- [ ] Critical dependencies pinned (no semver ranges like `^` or `~`)
 - [ ] `public/` directory exists or Dockerfile handles missing gracefully
 - [ ] Railway service uses correct build context (root vs `web/`)
 - [ ] Environment variables set in Railway dashboard
