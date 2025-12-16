@@ -112,15 +112,29 @@ Your task:
    - Low: -0.1 each
    - Round to nearest integer, min 1, max 10
 2. **Executive Summary**: 2-3 sentences describing the concrete findings. If no findings, state "No concrete security vulnerabilities detected in this scan."
-3. **Detailed Recommendations**: Generate recommendations ONLY from the findings list above. If no findings, provide 3 general best practices.
-4. **Confidence**: 0.9 if findings present, 0.7 if no findings (limited scan scope)
+3. **For EACH finding, provide detailed explanation**:
+   - **What it means**: Plain English explanation of what this vulnerability is
+   - **Why it's a problem**: Real-world impact (what attackers can do, what data can be exposed, business consequences)
+   - **Who it affects**: Users, business, compliance, etc.
+   - **When it matters**: Under what conditions this becomes critical
+4. **Detailed Recommendations**: Generate recommendations ONLY from the findings list above. If no findings, provide 3 general best practices.
+5. **Confidence**: 0.9 if findings present, 0.7 if no findings (limited scan scope)
 
-CRITICAL: Only reference concrete findings. Do not infer or speculate about risks not found.
+CRITICAL: Only reference concrete findings. Do not infer or speculate about risks not found. For each finding, explain WHY it matters in business terms that non-technical founders can understand.
 
 Format as JSON: 
 {
   "score": number,
   "summary": "string (describe concrete findings only)",
+  "findingsExplained": [
+    {
+      "type": "string (matching finding type)",
+      "whatItMeans": "plain English explanation",
+      "whyItsAProblem": "real-world impact and consequences",
+      "whoItAffects": "users/business/compliance",
+      "whenItMatters": "conditions when this becomes critical"
+    }
+  ],
   "recommendations": [
     {"priority": "High|Medium|Low", "action": "specific actionable step", "effort": "Low|Medium|High"}
   ],
@@ -182,6 +196,7 @@ Format as JSON:
       const analysis: Analysis = {
         score: Math.max(1, Math.min(10, parsed.score || 5)),
         summary: parsed.summary || 'Security analysis completed',
+        findingsExplained: parsed.findingsExplained || [],
         recommendations: parsed.recommendations || [],
         confidence: Math.max(0, Math.min(1, parsed.confidence || 0.8)),
       };

@@ -11,12 +11,21 @@ interface StatusResponse {
   result?: { data?: { status?: string; error?: string } };
 }
 
+interface FindingExplanation {
+  type: string;
+  whatItMeans: string;
+  whyItsAProblem: string;
+  whoItAffects: string;
+  whenItMatters: string;
+}
+
 interface Finding {
   type?: string;
   severity?: 'low' | 'medium' | 'high' | 'critical' | string;
   evidence?: string;
   cwe?: string;
   recommendation?: string;
+  explanation?: FindingExplanation;
   // Legacy fields for backwards compatibility
   title?: string;
   description?: string;
@@ -137,6 +146,10 @@ export default function Home() {
     }
   };
 
+  const [progress, setProgress] = useState(0);
+  const [currentStage, setCurrentStage] = useState('');
+  const [stageMessage, setStageMessage] = useState('');
+
   const pollStatus = async (id: string) => {
     const interval = setInterval(async () => {
       try {
@@ -151,6 +164,11 @@ export default function Home() {
         
         if (currentStatus) {
           setStatus(currentStatus);
+          // Update progress indicators
+          if (statusData.progress !== undefined) setProgress(statusData.progress);
+          if (statusData.currentStage) setCurrentStage(statusData.currentStage);
+          if (statusData.stageMessage) setStageMessage(statusData.stageMessage);
+          
           if (currentStatus === 'completed') {
             clearInterval(interval);
             setLoading(false);
@@ -166,7 +184,7 @@ export default function Home() {
         setLoading(false);
         setError(err instanceof Error ? err.message : 'Status check failed');
       }
-    }, 3000);
+    }, 2000); // Poll every 2 seconds for real-time updates
   };
 
   const fetchReport = async (id: string) => {
@@ -266,9 +284,35 @@ export default function Home() {
       setUnlocked(true);
       setShowEmailGate(false);
       setCurrentTab('details');
+      // Update URL to include token for sharing/bookmarking
+      window.history.replaceState({}, '', `/?jobId=${jId}&token=${token}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to verify access token');
     }
+  };
+
+  const downloadReport = () => {
+    if (!report) return;
+    const reportData = {
+      url: report.url || url,
+      timestamp: report.timestamp || new Date().toISOString(),
+      score: report.score,
+      summary: report.summary,
+      findings: report.findings || [],
+      recommendations: report.recommendations || [],
+      techStack: report.techStack,
+      deepSecurity: report.deepSecurity,
+      vibeCodingVulnerabilities: report.vibeCodingVulnerabilities,
+    };
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `security-audit-${report.url?.replace(/https?:\/\//, '').replace(/\//g, '-') || 'report'}-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const criticalFindings = report?.findings?.filter(f => 
@@ -367,16 +411,24 @@ export default function Home() {
                 View Results
               </button>
               {unlocked && (
-                <button
-                  onClick={() => setCurrentTab('details')}
-                  className={`py-4 px-2 border-b-2 font-semibold text-sm transition-colors ${
-                    currentTab === 'details'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Full Report
-                </button>
+                <>
+                  <button
+                    onClick={() => setCurrentTab('details')}
+                    className={`py-4 px-2 border-b-2 font-semibold text-sm transition-colors ${
+                      currentTab === 'details'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Full Report
+                  </button>
+                  <button
+                    onClick={downloadReport}
+                    className="ml-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold text-sm transition-colors"
+                  >
+                    Download Report
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -747,8 +799,22 @@ export default function Home() {
             {loading && (
               <div className="bg-white border-2 border-gray-900 rounded-xl p-12 text-center">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-red-600 border-t-transparent mb-6"></div>
-                <h3 className="text-xl font-bold capitalize mb-2">{status}</h3>
-                <p className="text-gray-600">Analyzing your application security...</p>
+                <h3 className="text-xl font-bold capitalize mb-2">{currentStage || status}</h3>
+                <p className="text-gray-600 mb-4">{stageMessage || 'Analyzing your application security...'}</p>
+                {progress > 0 && (
+                  <div className="w-full max-w-md mx-auto">
+                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                      <span>Progress</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div 
+                        className="bg-red-600 h-2.5 rounded-full transition-all duration-300" 
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1072,6 +1138,17 @@ export default function Home() {
                                 </span>
                               </div>
                               <p className="text-sm text-gray-700 mb-3">{getIssueDescription(f)}</p>
+                              {f.explanation && (
+                                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-3 rounded-r">
+                                  <p className="text-xs font-semibold text-blue-900 mb-2">Why This Matters:</p>
+                                  <div className="space-y-2 text-sm text-gray-700">
+                                    <p><strong>What it means:</strong> {f.explanation.whatItMeans}</p>
+                                    <p><strong>Why it's a problem:</strong> {f.explanation.whyItsAProblem}</p>
+                                    <p><strong>Who it affects:</strong> {f.explanation.whoItAffects}</p>
+                                    <p><strong>When it matters:</strong> {f.explanation.whenItMatters}</p>
+                                  </div>
+                                </div>
+                              )}
                               {f.recommendation && (
                                 <div className="pt-3 border-t border-gray-200">
                                   <p className="text-xs font-semibold text-gray-600 mb-1">How to fix:</p>
@@ -1475,6 +1552,17 @@ export default function Home() {
                                 </span>
                               </div>
                               <p className="text-sm text-gray-700 mb-3">{getIssueDescription(f)}</p>
+                              {f.explanation && (
+                                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-3 rounded-r">
+                                  <p className="text-xs font-semibold text-blue-900 mb-2">Why This Matters:</p>
+                                  <div className="space-y-2 text-sm text-gray-700">
+                                    <p><strong>What it means:</strong> {f.explanation.whatItMeans}</p>
+                                    <p><strong>Why it's a problem:</strong> {f.explanation.whyItsAProblem}</p>
+                                    <p><strong>Who it affects:</strong> {f.explanation.whoItAffects}</p>
+                                    <p><strong>When it matters:</strong> {f.explanation.whenItMatters}</p>
+                                  </div>
+                                </div>
+                              )}
                               {f.recommendation && (
                                 <div className="pt-3 border-t border-gray-200">
                                   <p className="text-xs font-semibold text-gray-600 mb-1">How to fix:</p>

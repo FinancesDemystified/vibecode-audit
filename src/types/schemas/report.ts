@@ -78,12 +78,21 @@ export const CopyAnalysisSchema = z.object({
   })),
 });
 
+export const findingExplanationSchema = z.object({
+  type: z.string(),
+  whatItMeans: z.string(),
+  whyItsAProblem: z.string(),
+  whoItAffects: z.string(),
+  whenItMatters: z.string(),
+});
+
 export const findingSchema = z.object({
   type: z.string(),
   severity: z.enum(['low', 'medium', 'high', 'critical']),
   evidence: z.string(),
   cwe: z.string().optional(),
   recommendation: z.string(),
+  explanation: findingExplanationSchema.optional(),
 });
 
 export const recommendationSchema = z.object({
@@ -95,6 +104,7 @@ export const recommendationSchema = z.object({
 export const analysisSchema = z.object({
   score: z.number().min(1).max(10),
   summary: z.string(),
+  findingsExplained: z.array(findingExplanationSchema).optional(),
   recommendations: z.array(recommendationSchema),
   confidence: z.number().min(0).max(1),
 });

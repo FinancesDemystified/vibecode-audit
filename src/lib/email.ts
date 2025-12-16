@@ -184,8 +184,13 @@ export async function sendAccessEmail(data: AccessEmailData): Promise<void> {
   await resend.emails.send({
     from: FROM_EMAIL,
     to: data.email,
+    replyTo: process.env.EMAIL_REPLY_TO || FROM_EMAIL,
     subject: `Security Audit Complete: ${data.issuesFound} issue${data.issuesFound !== 1 ? 's' : ''} found in ${data.url}`,
     html,
+    headers: {
+      'X-Priority': '1',
+      'X-MSMail-Priority': 'High',
+    },
   });
 }
 

@@ -157,13 +157,22 @@ export function createWorker(queueName: string = 'scan-queue') {
           loginAttempted: credentials && (credentials.password || credentials.username || credentials.email) ? true : false,
         });
 
+        // Merge findings explanations with findings
+        const findingsWithExplanations = findings.map(finding => {
+          const explanation = analysis.findingsExplained?.find(e => e.type === finding.type);
+          return {
+            ...finding,
+            explanation: explanation || undefined,
+          };
+        });
+
         const report = {
           jobId,
           url,
           timestamp: Date.now(),
           score: analysis.score,
           summary: analysis.summary,
-          findings,
+          findings: findingsWithExplanations,
           recommendations: analysis.recommendations,
           confidence: analysis.confidence,
           limitations: 'External-only scan. Upgrade for codebase review.',
