@@ -8,7 +8,13 @@ interface ScanResponse {
 }
 
 interface StatusResponse {
-  result?: { data?: { status?: string; error?: string } };
+  result?: { data?: { 
+    status?: string; 
+    error?: string;
+    progress?: number;
+    currentStage?: string;
+    stageMessage?: string;
+  } };
 }
 
 interface FindingExplanation {
@@ -55,9 +61,12 @@ interface VibeCodingVulnerabilities {
 }
 
 interface Report {
+  url?: string;
+  timestamp?: string;
   score?: number;
   summary?: string;
   findings?: Finding[];
+  recommendations?: Array<{ priority: string; category: string; issue: string; fix: string }>;
   techStack?: { framework?: string; hosting?: string };
   deepSecurity?: DeepSecurity;
   vibeCodingVulnerabilities?: VibeCodingVulnerabilities;
@@ -305,14 +314,14 @@ export default function Home() {
       vibeCodingVulnerabilities: report.vibeCodingVulnerabilities,
     };
     const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+    const downloadUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
+    a.href = downloadUrl;
     a.download = `security-audit-${report.url?.replace(/https?:\/\//, '').replace(/\//g, '-') || 'report'}-${Date.now()}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(downloadUrl);
   };
 
   const criticalFindings = report?.findings?.filter(f => 
