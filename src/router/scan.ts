@@ -44,6 +44,11 @@ export const scanRouter = router({
       } else {
         await redis.setex(`job:${jobId}`, 2592000, job);
       }
+      
+      if (!scanQueue) {
+        throw new Error('Queue not available - Redis connection required for job processing');
+      }
+      
       await scanQueue.add('scan', { 
         url: input.url, 
         email: input.email, 

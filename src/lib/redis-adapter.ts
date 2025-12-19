@@ -14,6 +14,41 @@ function getRedis() {
     redisClient = new IORedis(process.env.REDIS_URL, {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
+      retryStrategy(times) {
+        const delay = Math.min(times * 50, 2000);
+        if (times > 10) {
+          console.error('[Redis] Max retries exceeded, stopping reconnection attempts');
+          return null;
+        }
+        return delay;
+      },
+      reconnectOnError(err) {
+        const targetErrors = ['READONLY', 'ECONNREFUSED', 'ETIMEDOUT'];
+        if (targetErrors.some(e => err.message.includes(e))) {
+          return true;
+        }
+        return false;
+      },
+    });
+
+    redisClient.on('error', (err: Error) => {
+      if (err.message.includes('ENOTFOUND') || err.message.includes('ECONNREFUSED')) {
+        console.warn('[Redis] Connection error (non-fatal):', err.message);
+      } else {
+        console.error('[Redis] Error:', err.message);
+      }
+    });
+
+    redisClient.on('connect', () => {
+      console.log('[Redis] Connected');
+    });
+
+    redisClient.on('ready', () => {
+      console.log('[Redis] Ready');
+    });
+
+    redisClient.on('close', () => {
+      console.warn('[Redis] Connection closed');
     });
   } else if (process.env.UPSTASH_REDIS_URL) {
     const { Redis } = require('@upstash/redis');

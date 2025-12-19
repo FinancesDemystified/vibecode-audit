@@ -14,6 +14,19 @@ function getRatelimit() {
     const redis = new IORedis(process.env.REDIS_URL, {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
+      retryStrategy(times) {
+        const delay = Math.min(times * 50, 2000);
+        return times > 10 ? null : delay;
+      },
+      reconnectOnError(err) {
+        return ['READONLY', 'ECONNREFUSED', 'ETIMEDOUT'].some(e => err.message.includes(e));
+      },
+    });
+
+    redis.on('error', (err: Error) => {
+      if (!err.message.includes('ENOTFOUND') && !err.message.includes('ECONNREFUSED')) {
+        console.error('[RateLimit Redis] Error:', err.message);
+      }
     });
 
     ratelimitInstance = {

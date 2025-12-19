@@ -13,6 +13,19 @@ if (process.env.REDIS_URL) {
   redis = new IORedis(process.env.REDIS_URL, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
+    retryStrategy(times) {
+      const delay = Math.min(times * 50, 2000);
+      return times > 10 ? null : delay;
+    },
+    reconnectOnError(err) {
+      return ['READONLY', 'ECONNREFUSED', 'ETIMEDOUT'].some(e => err.message.includes(e));
+    },
+  });
+
+  redis.on('error', (err: Error) => {
+    if (!err.message.includes('ENOTFOUND') && !err.message.includes('ECONNREFUSED')) {
+      console.error('[EventBus Redis] Error:', err.message);
+    }
   });
 } else if (process.env.UPSTASH_REDIS_URL) {
   const { Redis } = require('@upstash/redis');

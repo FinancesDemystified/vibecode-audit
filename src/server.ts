@@ -3,6 +3,7 @@
  * Dependencies: express, @trpc/server
  * Purpose: Main API server
  */
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
