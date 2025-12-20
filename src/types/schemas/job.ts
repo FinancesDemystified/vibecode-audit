@@ -22,6 +22,8 @@ export const jobSchema = z.object({
   createdAt: z.number(),
   completedAt: z.number().optional(),
   progress: z.number().min(0).max(100).optional(),
+  currentStage: z.string().optional(),
+  stageMessage: z.string().optional(),
   reportUrl: z.string().url().optional(),
   error: z.string().optional(),
   email: z.string().email().optional(),
