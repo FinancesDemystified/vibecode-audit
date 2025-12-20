@@ -36,59 +36,53 @@ export default function FindingCard({ finding, index }: FindingCardProps) {
     return `Implement proper security measures to address this ${f.severity || 'security'} issue. Check your platform documentation for specific steps.`;
   };
 
-  const severityColor = finding.severity?.toLowerCase() === 'critical' ? 'red' :
-    finding.severity?.toLowerCase() === 'high' ? 'orange' :
-    finding.severity?.toLowerCase() === 'medium' ? 'yellow' : 'green';
+  const severity = finding.severity?.toLowerCase() || 'low';
+  const severityBadge = severity === 'critical' ? 'bg-gray-900 text-white' :
+    severity === 'high' ? 'bg-gray-800 text-white' :
+    severity === 'medium' ? 'bg-gray-700 text-white' :
+    'bg-gray-100 text-gray-700';
 
   return (
-    <div key={index} className={`border-2 rounded-lg p-4 ${
-      severityColor === 'red' ? 'border-red-200 bg-red-50' :
-      severityColor === 'orange' ? 'border-orange-200 bg-orange-50' :
-      severityColor === 'yellow' ? 'border-yellow-200 bg-yellow-50' :
-      'border-green-200 bg-green-50'
-    }`}>
-      <div className="flex items-start gap-3">
-        <div className={`flex-shrink-0 w-3 h-3 rounded-full mt-1.5 ${
-          severityColor === 'red' ? 'bg-red-600' :
-          severityColor === 'orange' ? 'bg-orange-600' :
-          severityColor === 'yellow' ? 'bg-yellow-500' :
-          'bg-green-600'
-        }`} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <h4 className="font-semibold text-gray-900">{getIssueTitle(finding)}</h4>
-            <span className={`text-xs px-2 py-0.5 rounded uppercase font-medium flex-shrink-0 ${
-              severityColor === 'red' ? 'bg-red-200 text-red-800' :
-              severityColor === 'orange' ? 'bg-orange-200 text-orange-800' :
-              severityColor === 'yellow' ? 'bg-yellow-200 text-yellow-800' :
-              'bg-green-200 text-green-800'
-            }`}>
-              {finding.severity || 'Unknown'}
-            </span>
-          </div>
-          <p className="text-sm text-gray-700 mb-3">{getIssueDescription(finding)}</p>
-          {finding.explanation && (
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-3 rounded-r">
-              <p className="text-xs font-semibold text-blue-900 mb-2">Why This Matters:</p>
-              <div className="space-y-2 text-sm text-gray-700">
-                <p><strong>What it means:</strong> {finding.explanation.whatItMeans}</p>
-                <p><strong>Why it's a problem:</strong> {finding.explanation.whyItsAProblem}</p>
-                <p><strong>Who it affects:</strong> {finding.explanation.whoItAffects}</p>
-                <p><strong>When it matters:</strong> {finding.explanation.whenItMatters}</p>
-              </div>
-            </div>
-          )}
-          {finding.recommendation && (
-            <div className="pt-3 border-t border-gray-200">
-              <p className="text-xs font-semibold text-gray-600 mb-1">How to fix:</p>
-              <p className="text-sm text-gray-700">{getIssueRecommendation(finding)}</p>
-            </div>
-          )}
-          {finding.cwe && (
-            <p className="text-xs text-gray-500 mt-2">CWE: {finding.cwe}</p>
-          )}
-        </div>
+    <div key={index} className="border border-gray-200 rounded-lg p-5 bg-white hover:border-gray-300 transition-colors">
+      <div className="flex items-start justify-between gap-4 mb-3">
+        <h4 className="text-base font-semibold text-gray-900">{getIssueTitle(finding)}</h4>
+        <span className={`text-xs px-2.5 py-1 rounded-md font-medium flex-shrink-0 ${severityBadge}`}>
+          {finding.severity || 'Unknown'}
+        </span>
       </div>
+      <p className="text-sm text-gray-600 mb-4 leading-relaxed">{getIssueDescription(finding)}</p>
+      {finding.explanation && (
+        <div className="border-l border-gray-300 pl-4 py-2 mb-4 bg-gray-50 rounded-r">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Why This Matters</p>
+          <dl className="space-y-3 text-sm">
+            <div>
+              <dt className="font-medium text-gray-900 mb-1">What it means</dt>
+              <dd className="text-gray-600">{finding.explanation.whatItMeans}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-gray-900 mb-1">Why it's a problem</dt>
+              <dd className="text-gray-600">{finding.explanation.whyItsAProblem}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-gray-900 mb-1">Who it affects</dt>
+              <dd className="text-gray-600">{finding.explanation.whoItAffects}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-gray-900 mb-1">When it matters</dt>
+              <dd className="text-gray-600">{finding.explanation.whenItMatters}</dd>
+            </div>
+          </dl>
+        </div>
+      )}
+      {finding.recommendation && (
+        <div className="pt-4 border-t border-gray-100">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">How to Fix</p>
+          <p className="text-sm text-gray-700 leading-relaxed">{getIssueRecommendation(finding)}</p>
+        </div>
+      )}
+      {finding.cwe && (
+        <p className="text-xs text-gray-400 mt-3 font-mono">CWE-{finding.cwe}</p>
+      )}
     </div>
   );
 }

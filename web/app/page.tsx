@@ -385,39 +385,30 @@ export default function Home() {
         {currentTab === 'details' && unlocked && report && (
           <div className="space-y-6 max-w-4xl mx-auto">
             {report.summary && (
-              <div className="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-lg">
-                <h3 className="text-lg font-bold mb-3 text-gray-900">Summary</h3>
-                <p className="text-gray-700 leading-relaxed">{report.summary}</p>
+              <div className="border border-gray-200 rounded-lg p-6 bg-white">
+                <h3 className="text-lg font-semibold mb-3 text-gray-900">Summary</h3>
+                <p className="text-gray-600 leading-relaxed">{report.summary}</p>
               </div>
             )}
 
             {report.deepSecurity && (
-              <div className="bg-white border-2 border-blue-200 rounded-xl p-6 shadow-lg">
-                <h3 className="text-xl font-bold mb-4 text-gray-900 flex items-center gap-2">
-                  <span>🛡️</span>
-                  <span>Deep Security Analysis</span>
-                  <span className="text-lg text-gray-500">({report.deepSecurity.overallScore || 0}/100)</span>
-                </h3>
+              <div className="border border-gray-200 rounded-lg p-6 bg-white">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Deep Security Analysis</h3>
+                  <span className="text-sm text-gray-500">Score: {report.deepSecurity.overallScore || 0}/100</span>
+                </div>
                 
                 {report.deepSecurity.recommendations && report.deepSecurity.recommendations.length > 0 && (
                   <div className="space-y-3">
                     {report.deepSecurity.recommendations.map((rec, i) => (
-                      <div key={i} className={`border-l-4 pl-4 py-2 ${
-                        rec.priority === 'critical' ? 'border-red-500 bg-red-50' :
-                        rec.priority === 'high' ? 'border-orange-500 bg-orange-50' :
-                        'border-yellow-500 bg-yellow-50'
-                      }`}>
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <span className={`font-semibold ${
-                            rec.priority === 'critical' ? 'text-red-700' :
-                            rec.priority === 'high' ? 'text-orange-700' :
-                            'text-yellow-700'
-                          }`}>
-                            [{rec.priority.toUpperCase()}] {rec.category}
+                      <div key={i} className="border-l border-gray-300 pl-4 py-3 bg-gray-50 rounded-r">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                            {rec.priority} • {rec.category}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-700 mb-1">{rec.issue}</p>
-                        <p className="text-sm font-medium text-gray-900">Fix: {rec.fix}</p>
+                        <p className="text-sm text-gray-700 mb-2">{rec.issue}</p>
+                        <p className="text-sm font-medium text-gray-900">{rec.fix}</p>
                       </div>
                     ))}
                   </div>
@@ -426,50 +417,49 @@ export default function Home() {
             )}
 
                 {report.vibeCodingVulnerabilities && (
-              <div className="bg-white border-2 border-purple-200 rounded-xl p-6 shadow-lg">
-                <h3 className="text-xl font-bold mb-4 text-gray-900 flex items-center gap-2">
-                  <span>🔍</span>
-                  <span>Vibe-Coding Vulnerability Scan</span>
-                  <span className={`text-lg font-bold ${
-                    report.vibeCodingVulnerabilities.overallRisk === 'critical' ? 'text-red-600' :
-                    report.vibeCodingVulnerabilities.overallRisk === 'high' ? 'text-orange-600' :
-                    report.vibeCodingVulnerabilities.overallRisk === 'medium' ? 'text-yellow-600' :
-                    'text-green-600'
+              <div className="border border-gray-200 rounded-lg p-6 bg-white">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900">Vibe-Coding Vulnerability Scan</h3>
+                  <span className={`text-sm font-medium px-3 py-1 rounded-md ${
+                    report.vibeCodingVulnerabilities.overallRisk === 'critical' ? 'bg-gray-900 text-white' :
+                    report.vibeCodingVulnerabilities.overallRisk === 'high' ? 'bg-gray-800 text-white' :
+                    report.vibeCodingVulnerabilities.overallRisk === 'medium' ? 'bg-gray-700 text-white' :
+                    'bg-gray-100 text-gray-700'
                   }`}>
-                    ({report.vibeCodingVulnerabilities.overallRisk?.toUpperCase() || 'N/A'})
+                    {report.vibeCodingVulnerabilities.overallRisk?.toUpperCase() || 'N/A'}
                   </span>
-                </h3>
+                </div>
 
                 {(report as any).breachNews && (report as any).breachNews.length > 0 && (
-                  <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r">
-                    <h4 className="font-semibold text-yellow-900 mb-2">📰 Recent Breaches You Should Know About</h4>
-                    <ul className="space-y-2 text-sm text-gray-700">
+                  <div className="mb-6 border-l border-gray-300 pl-4 py-3 bg-gray-50 rounded-r">
+                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Recent Breaches</h4>
+                    <ul className="space-y-2.5 text-sm text-gray-600">
                       {(report as any).breachNews.map((item: string, i: number) => (
                         <li key={i} className="flex items-start gap-2">
-                          <span className="text-yellow-600 mt-0.5">•</span>
-                          <span>{item}</span>
+                          <span className="text-gray-400 mt-1.5 text-xs">•</span>
+                          <span className="leading-relaxed">{item}</span>
                         </li>
                       ))}
                     </ul>
-                    <p className="text-xs text-gray-600 mt-3">Updated daily from security news feeds</p>
+                    <p className="text-xs text-gray-400 mt-4">Updated daily from security news feeds</p>
                   </div>
                 )}
 
                 {report.vibeCodingVulnerabilities.hardCodedSecrets && report.vibeCodingVulnerabilities.hardCodedSecrets.length > 0 && (
                   <div className="mb-6">
-                    <h4 className="font-semibold text-red-600 mb-3">🚨 Hard-Coded Secrets ({report.vibeCodingVulnerabilities.hardCodedSecrets.length})</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Hard-Coded Secrets ({report.vibeCodingVulnerabilities.hardCodedSecrets.length})</h4>
                     <div className="space-y-2">
                       {report.vibeCodingVulnerabilities.hardCodedSecrets.map((secret, i) => (
-                        <div key={i} className="bg-red-50 border border-red-200 rounded-lg p-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <p className="font-semibold text-red-800">{secret.type}</p>
-                              <p className="text-sm text-gray-700 mt-1">{secret.evidence}</p>
+                        <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900">{secret.type}</p>
+                              <p className="text-sm text-gray-600 mt-1">{secret.evidence}</p>
                             </div>
-                            <span className={`text-xs px-2 py-1 rounded uppercase font-medium ${
-                              secret.severity === 'critical' ? 'bg-red-200 text-red-800' :
-                              secret.severity === 'high' ? 'bg-orange-200 text-orange-800' :
-                              'bg-yellow-200 text-yellow-800'
+                            <span className={`text-xs px-2.5 py-1 rounded-md font-medium flex-shrink-0 ${
+                              secret.severity === 'critical' ? 'bg-gray-900 text-white' :
+                              secret.severity === 'high' ? 'bg-gray-800 text-white' :
+                              'bg-gray-700 text-white'
                             }`}>
                               {secret.severity}
                             </span>
@@ -482,22 +472,22 @@ export default function Home() {
 
                 {report.vibeCodingVulnerabilities.unauthenticatedApiAccess && report.vibeCodingVulnerabilities.unauthenticatedApiAccess.length > 0 && (
                   <div className="mb-6">
-                    <h4 className="font-semibold text-orange-600 mb-3">⚠️ Unauthenticated API Endpoints ({report.vibeCodingVulnerabilities.unauthenticatedApiAccess.length})</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Unauthenticated API Endpoints ({report.vibeCodingVulnerabilities.unauthenticatedApiAccess.length})</h4>
                     <div className="space-y-2">
                       {report.vibeCodingVulnerabilities.unauthenticatedApiAccess.map((endpoint, i) => (
-                        <div key={i} className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                          <div className="flex items-start justify-between mb-2">
+                        <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white">
+                          <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-orange-800 break-all">{endpoint.url}</p>
-                              <p className="text-sm text-gray-700 mt-1">{endpoint.evidence}</p>
+                              <p className="font-medium text-gray-900 break-all">{endpoint.url}</p>
+                              <p className="text-sm text-gray-600 mt-1">{endpoint.evidence}</p>
                               {endpoint.dataType && (
-                                <p className="text-xs text-gray-600 mt-1">Data Type: {endpoint.dataType}</p>
+                                <p className="text-xs text-gray-500 mt-1 font-mono">{endpoint.dataType}</p>
                               )}
                             </div>
-                            <span className={`text-xs px-2 py-1 rounded uppercase font-medium flex-shrink-0 ml-2 ${
-                              endpoint.severity === 'critical' ? 'bg-red-200 text-red-800' :
-                              endpoint.severity === 'high' ? 'bg-orange-200 text-orange-800' :
-                              'bg-yellow-200 text-yellow-800'
+                            <span className={`text-xs px-2.5 py-1 rounded-md font-medium flex-shrink-0 ${
+                              endpoint.severity === 'critical' ? 'bg-gray-900 text-white' :
+                              endpoint.severity === 'high' ? 'bg-gray-800 text-white' :
+                              'bg-gray-700 text-white'
                             }`}>
                               {endpoint.severity}
                             </span>
@@ -510,25 +500,17 @@ export default function Home() {
 
                 {report.vibeCodingVulnerabilities.recommendations && report.vibeCodingVulnerabilities.recommendations.length > 0 && (
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Recommendations ({report.vibeCodingVulnerabilities.recommendations.length})</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Recommendations ({report.vibeCodingVulnerabilities.recommendations.length})</h4>
                     <div className="space-y-3">
                       {report.vibeCodingVulnerabilities.recommendations.map((rec, i) => (
-                        <div key={i} className={`border-l-4 pl-4 py-2 ${
-                          rec.priority === 'critical' ? 'border-red-500 bg-red-50' :
-                          rec.priority === 'high' ? 'border-orange-500 bg-orange-50' :
-                          'border-yellow-500 bg-yellow-50'
-                        }`}>
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <span className={`font-semibold ${
-                              rec.priority === 'critical' ? 'text-red-700' :
-                              rec.priority === 'high' ? 'text-orange-700' :
-                              'text-yellow-700'
-                            }`}>
-                              [{rec.priority.toUpperCase()}] {rec.category}
+                        <div key={i} className="border-l border-gray-300 pl-4 py-3 bg-gray-50 rounded-r">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                              {rec.priority} • {rec.category}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-700 mb-1">{rec.issue}</p>
-                          <p className="text-sm font-medium text-gray-900">Fix: {rec.fix}</p>
+                          <p className="text-sm text-gray-700 mb-2">{rec.issue}</p>
+                          <p className="text-sm font-medium text-gray-900">{rec.fix}</p>
                         </div>
                       ))}
                     </div>
@@ -541,9 +523,9 @@ export default function Home() {
                  report.vibeCodingVulnerabilities.fileUploadVulnerabilities?.length === 0 &&
                  !report.vibeCodingVulnerabilities.clientSideAuth?.detected &&
                  report.vibeCodingVulnerabilities.recommendations?.length === 0 && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                    <p className="text-green-800 font-medium">✓ No vibe-coding vulnerabilities detected</p>
-                    <p className="text-sm text-green-700 mt-1">Scanned for hardcoded secrets, exposed APIs, and backend misconfigurations</p>
+                  <div className="border border-gray-200 rounded-lg p-6 text-center bg-gray-50">
+                    <p className="text-gray-900 font-medium">No vibe-coding vulnerabilities detected</p>
+                    <p className="text-sm text-gray-500 mt-1">Scanned for hardcoded secrets, exposed APIs, and backend misconfigurations</p>
                   </div>
                 )}
               </div>

@@ -29,32 +29,29 @@ export default function FindingsList({ report }: FindingsListProps) {
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {criticalFindings.length > 0 && (
-        <div className="bg-white border-2 border-red-600 rounded-xl p-6">
+        <div className="border border-gray-200 rounded-lg p-6 bg-white">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold flex items-center gap-2">
-              <span>🚨</span>
-              <span>Critical Issues</span>
-            </h3>
-            <span className="px-3 py-1 bg-red-600 text-white rounded-full text-sm font-bold">
+            <h3 className="text-base font-semibold text-gray-900">Critical Issues</h3>
+            <span className="px-2.5 py-1 bg-gray-900 text-white rounded-md text-sm font-medium">
               {criticalFindings.length}
             </span>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {criticalFindings.map((f, i) => (
-              <div key={i} className="p-4 bg-red-50 rounded-lg">
-                <h4 className="font-semibold mb-1">{f.type || f.title || 'Security Issue'}</h4>
-                <p className="text-sm text-red-700 uppercase font-semibold">{f.severity} SEVERITY</p>
+              <div key={i} className="p-3 border border-gray-200 rounded-lg bg-gray-50">
+                <h4 className="font-medium text-gray-900 mb-1">{f.type || f.title || 'Security Issue'}</h4>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">{f.severity}</p>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <div className="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-lg">
+      <div className="border border-gray-200 rounded-lg p-6 bg-white">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900">
+          <h3 className="text-base font-semibold text-gray-900">
             All Issues ({report.findings.length})
           </h3>
         </div>
@@ -62,7 +59,7 @@ export default function FindingsList({ report }: FindingsListProps) {
         <div className="flex flex-wrap gap-2 mb-4">
           <button
             onClick={() => setSelectedSeverity(null)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
               selectedSeverity === null
                 ? 'bg-gray-900 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -77,12 +74,9 @@ export default function FindingsList({ report }: FindingsListProps) {
               <button
                 key={sev}
                 onClick={() => setSelectedSeverity(sev)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${
                   selectedSeverity === sev
-                    ? sev === 'critical' ? 'bg-red-600 text-white' :
-                      sev === 'high' ? 'bg-orange-600 text-white' :
-                      sev === 'medium' ? 'bg-yellow-500 text-white' :
-                      'bg-green-600 text-white'
+                    ? 'bg-gray-900 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >

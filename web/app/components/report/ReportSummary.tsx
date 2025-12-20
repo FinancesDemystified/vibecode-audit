@@ -20,22 +20,22 @@ export default function ReportSummary({ report, preview, criticalCount, totalIss
   const critical = preview?.findingsSummary?.critical || criticalCount || 0;
 
   return (
-    <div className="bg-gradient-to-br from-red-600 to-red-700 text-white rounded-xl p-6 shadow-lg">
+    <div className="border border-gray-200 rounded-lg p-6 bg-white">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wider opacity-90 mb-1">Security Score</p>
-          <div className="text-4xl font-bold">
-            {score}<span className="text-2xl opacity-75">/10</span>
+          <p className="text-sm text-gray-500 mb-1">Security Score</p>
+          <div className="text-5xl font-semibold text-gray-900">
+            {score}<span className="text-2xl text-gray-500 font-normal">/10</span>
           </div>
         </div>
-        <div className="flex gap-6">
-          <div className="text-center">
-            <div className="text-xl font-bold">{issues}</div>
-            <div className="text-xs opacity-90">Issues</div>
+        <div className="flex gap-8">
+          <div>
+            <div className="text-2xl font-semibold text-gray-900">{issues}</div>
+            <div className="text-sm text-gray-500">Issues</div>
           </div>
-          <div className="text-center">
-            <div className="text-xl font-bold">{critical}</div>
-            <div className="text-xs opacity-90">Critical</div>
+          <div>
+            <div className="text-2xl font-semibold text-gray-900">{critical}</div>
+            <div className="text-sm text-gray-500">Critical</div>
           </div>
         </div>
       </div>
