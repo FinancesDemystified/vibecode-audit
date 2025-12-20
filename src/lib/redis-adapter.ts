@@ -10,7 +10,12 @@ let redisClient: IORedis | any | null = null;
 function getRedis() {
   if (redisClient) return redisClient;
   
-  if (process.env.REDIS_URL) {
+  // Skip production Redis URLs when running locally
+  const redisUrl = process.env.REDIS_URL;
+  const isLocalDev = process.env.NODE_ENV !== 'production';
+  const isProductionRedis = redisUrl?.includes('railway.internal') || redisUrl?.includes('.upstash.io');
+  
+  if (redisUrl && !(isLocalDev && isProductionRedis)) {
     redisClient = new IORedis(process.env.REDIS_URL, {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
@@ -58,10 +63,11 @@ function getRedis() {
     });
   } else if (process.env.NODE_ENV !== 'production') {
     // In-memory fallback for local dev
-    const store = new Map<string, string>();
+    const store = new Map<string, any>();
     redisClient = {
       get: async (k: string) => store.get(k) ?? null,
-      set: async (k: string, v: string) => { store.set(k, v); return 'OK'; },
+      set: async (k: string, v: any) => { store.set(k, v); return 'OK'; },
+      setex: async (k: string, _ttl: number, v: any) => { store.set(k, v); return 'OK'; },
       del: async (k: string) => { store.delete(k); return 1; },
       exists: async (k: string) => store.has(k) ? 1 : 0,
       keys: async (p: string) => [...store.keys()].filter(k => k.startsWith(p.replace('*', ''))),

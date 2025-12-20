@@ -141,7 +141,8 @@ export async function sendVerificationEmail(data: VerificationEmailData): Promis
 </body>
 </html>`;
 
-  await getResend().emails.send({
+  console.log(`[Email] Sending verification code to ${data.email}`);
+  const result = await getResend().emails.send({
     from: FROM_EMAIL,
     to: data.email,
     replyTo: process.env.EMAIL_REPLY_TO || FROM_EMAIL,
@@ -152,6 +153,7 @@ export async function sendVerificationEmail(data: VerificationEmailData): Promis
       'X-MSMail-Priority': 'High',
     },
   });
+  console.log(`[Email] Sent successfully, id: ${result.data?.id || 'unknown'}`);
 }
 
 export async function sendAccessEmail(data: AccessEmailData): Promise<void> {

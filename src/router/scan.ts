@@ -325,13 +325,19 @@ export const scanRouter = router({
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       await redis.setex(`verify:${input.email}:${input.jobId}`, 300, code);
 
-      // Resend email
-      const { sendVerificationEmail } = await import('../lib/email');
-      await sendVerificationEmail({
-        email: input.email,
-        code,
-        url: report.url,
-      });
+      // Resend email with error handling
+      try {
+        const { sendVerificationEmail } = await import('../lib/email');
+        await sendVerificationEmail({
+          email: input.email,
+          code,
+          url: report.url,
+        });
+        console.log(`[ResendCode] Email sent to ${input.email}`);
+      } catch (error) {
+        console.error('[ResendCode] Failed to send email:', error);
+        throw new Error('Failed to send email. Please try again.');
+      }
 
       return { 
         success: true,
