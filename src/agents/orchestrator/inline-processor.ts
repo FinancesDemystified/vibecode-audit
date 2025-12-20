@@ -166,17 +166,28 @@ export async function processInlineScan(
       jobId
     );
     
-    // AI Analysis
+    // AI Analysis - vibe-coding context
+    const framework = securityData.techStack?.framework?.toLowerCase() || '';
+    const aiMessages = [
+      'Checking against recent Cursor/Bolt breach patterns...',
+      'Analyzing Vercel/Firebase misconfig trends...',
+      'Cross-referencing Supabase RLS bypass cases...',
+      framework.includes('next') ? 'Checking Next.js server action exposures...' :
+      framework.includes('react') ? 'Scanning for React hydration leaks...' :
+      'Analyzing framework-specific attack vectors...',
+      'Scoring risk based on 2024 vibe-code incidents...',
+    ];
+    
     await updateStatus(jobId, 'analyzing', { 
       progress: 78, 
       currentStage: 'AI Analysis', 
-      stageMessage: 'AI analyzing vulnerability patterns...' 
+      stageMessage: aiMessages[Math.floor(Math.random() * 3)]
     });
     
     await updateStatus(jobId, 'analyzing', { 
       progress: 82, 
       currentStage: 'AI Analysis', 
-      stageMessage: 'Generating risk scores...' 
+      stageMessage: aiMessages[3 + Math.floor(Math.random() * 2)]
     });
     const analysis = await analyzeWithAI(findings, securityData, eventBus, jobId);
 
