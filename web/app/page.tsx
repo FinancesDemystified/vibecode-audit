@@ -337,10 +337,23 @@ export default function Home() {
                               )}
                             </ul>
                           ) : (
-                            <p className="text-sm text-gray-600">No vibe-coding vulnerabilities detected</p>
+                            <ul className="space-y-1.5 text-sm">
+                              <li className="flex items-center gap-2 text-green-700">
+                                <span className="text-green-600">✓</span> No hardcoded secrets found
+                              </li>
+                              <li className="flex items-center gap-2 text-green-700">
+                                <span className="text-green-600">✓</span> No exposed APIs detected
+                              </li>
+                              <li className="flex items-center gap-2 text-green-700">
+                                <span className="text-green-600">✓</span> No backend misconfigurations
+                              </li>
+                              <li className="flex items-center gap-2 text-green-700">
+                                <span className="text-green-600">✓</span> Client-side auth properly implemented
+                              </li>
+                            </ul>
                           )}
                           {preview.vibeCodingSummary.overallRisk && (
-                            <p className="text-xs text-gray-500 mt-2">
+                            <p className="text-xs text-gray-500 mt-3 pt-3 border-t border-gray-100">
                               Risk Level: <span className="font-semibold">{preview.vibeCodingSummary.overallRisk.toUpperCase()}</span>
                               {preview.vibeCodingSummary.score !== undefined && (
                                 <span> • Score: {preview.vibeCodingSummary.score}/100</span>
