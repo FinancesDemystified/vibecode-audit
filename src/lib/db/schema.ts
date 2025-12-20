@@ -66,7 +66,18 @@ export const scanMetrics = pgTable('scan_metrics', {
   completedAt: timestamp('completed_at'),
 });
 
+export const reports = pgTable('reports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  jobId: uuid('job_id').unique().notNull(),
+  url: text('url').notNull(),
+  reportData: jsonb('report_data').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  expiresAt: timestamp('expires_at'), // Optional cleanup
+});
+
 export type EmailCapture = typeof emailCaptures.$inferSelect;
 export type NewEmailCapture = typeof emailCaptures.$inferInsert;
 export type ScanMetric = typeof scanMetrics.$inferSelect;
 export type NewScanMetric = typeof scanMetrics.$inferInsert;
+export type Report = typeof reports.$inferSelect;
+export type NewReport = typeof reports.$inferInsert;

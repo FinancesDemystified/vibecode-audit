@@ -5,7 +5,18 @@
  */
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend: Resend | null = null;
+
+function getResend(): Resend {
+  if (!resend) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY environment variable is required');
+    }
+    resend = new Resend(apiKey);
+  }
+  return resend;
+}
 
 const FROM_EMAIL = process.env.FROM_EMAIL || 'security@vibecodeaudit.app';
 const WEB_URL = process.env.WEB_URL || 'http://localhost:3000';
@@ -181,7 +192,7 @@ export async function sendAccessEmail(data: AccessEmailData): Promise<void> {
 </body>
 </html>`;
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM_EMAIL,
     to: data.email,
     replyTo: process.env.EMAIL_REPLY_TO || FROM_EMAIL,
@@ -195,7 +206,7 @@ export async function sendAccessEmail(data: AccessEmailData): Promise<void> {
 }
 
 export async function sendTestEmail(to: string): Promise<void> {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM_EMAIL,
     to,
     subject: 'Test Email from VibeCode Audit',

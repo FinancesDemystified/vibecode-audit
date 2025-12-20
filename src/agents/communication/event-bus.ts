@@ -13,11 +13,11 @@ if (process.env.REDIS_URL) {
   redis = new IORedis(process.env.REDIS_URL, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
-    retryStrategy(times) {
+    retryStrategy(times: number) {
       const delay = Math.min(times * 50, 2000);
       return times > 10 ? null : delay;
     },
-    reconnectOnError(err) {
+    reconnectOnError(err: Error) {
       return ['READONLY', 'ECONNREFUSED', 'ETIMEDOUT'].some(e => err.message.includes(e));
     },
   });

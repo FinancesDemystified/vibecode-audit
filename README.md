@@ -34,13 +34,7 @@ npm run dev:api
 
 ### macOS Permission Issues
 
-If you get `EPERM: operation not permitted` errors:
-
-1. Try `npm run dev:alt` (uses port 3001)
-2. Temporarily disable macOS firewall
-3. Use `npx next dev --hostname 127.0.0.1 --port 3004`
-
-See `web/README-dev.md` for detailed troubleshooting.
+**Fixed automatically**: The `predev` script removes macOS extended attributes before starting. If you still see permission errors, run `./web/fix-permissions.sh` manually.
 
 ## API Usage
 

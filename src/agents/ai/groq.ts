@@ -8,9 +8,18 @@ import type { Finding, Analysis } from '../../types';
 import type { EventBus } from '../communication';
 import type { SecurityData } from '../scanner/extractor';
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY!,
-});
+let groqInstance: Groq | null = null;
+
+function getGroq(): Groq {
+  if (!groqInstance) {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      throw new Error('GROQ_API_KEY environment variable is required');
+    }
+    groqInstance = new Groq({ apiKey });
+  }
+  return groqInstance;
+}
 
 const PRIMARY_MODEL = 'llama-3.3-70b-versatile';
 const FALLBACK_MODELS = ['llama-3.1-8b-instant', 'openai/gpt-oss-20b'];
@@ -22,7 +31,7 @@ async function callGroqWithRetry(
 ): Promise<string> {
   for (let i = 0; i < retries; i++) {
     try {
-      const completion = await groq.chat.completions.create({
+      const completion = await getGroq().chat.completions.create({
         model,
         messages: [
           {
@@ -223,6 +232,57 @@ Format as JSON:
     });
 
     return ruleBasedScoring(findings);
+  }
+}
+
+export async function generatePreviewSummary(
+  reportData: any,
+  eventBus: EventBus,
+  jobId: string
+): Promise<string> {
+  const prompt = `Generate a compelling 2-3 sentence preview summary for a security audit report that builds trust and encourages the user to unlock the full report.
+
+Context:
+- URL: ${reportData.url}
+- Security Score: ${reportData.score}/10
+- Tech Stack: ${reportData.techStack?.framework || 'Unknown'} on ${reportData.techStack?.hosting || 'Unknown hosting'}
+- Critical Issues: ${reportData.findings?.filter((f: any) => f.severity === 'critical').length || 0}
+- High Issues: ${reportData.findings?.filter((f: any) => f.severity === 'high').length || 0}
+- Total Issues: ${reportData.findings?.length || 0}
+- Vibe-Coding Risk: ${reportData.vibeCodingVulnerabilities?.overallRisk || 'N/A'}
+- Deep Security Score: ${reportData.deepSecurity?.overallScore || 'N/A'}
+- Has Privacy Policy: ${reportData.deepSecurity?.securityCopyAnalysis?.privacyPolicy?.found ? 'Yes' : 'No'}
+- Has Security Page: ${reportData.deepSecurity?.securityCopyAnalysis?.securityPage?.found ? 'Yes' : 'No'}
+- SEO Issues: ${reportData.seo?.issues?.length || 0}
+- Copy Analysis Score: ${reportData.copyAnalysis?.overallScore || 'N/A'}
+
+Requirements:
+1. Start with a trust-building statement about what was discovered
+2. Highlight the most compelling insight (security risk, tech stack finding, or unique vulnerability)
+3. Create FOMO by hinting at deeper insights in the full report
+4. Be professional but accessible (non-technical founders should understand)
+5. Maximum 3 sentences, 200 words max
+6. Don't mention specific vulnerabilities - be intriguing but not alarming
+7. Focus on value: what they'll learn, what risks exist, what opportunities they're missing
+
+Example tone: "We've completed a comprehensive security analysis of your application and discovered [compelling insight]. Our scan identified [key finding] that could impact [business outcome]. Unlock the full report to see detailed evidence, step-by-step fixes, and [specific value proposition]."
+
+Generate ONLY the summary text, no quotes or formatting:`;
+
+  try {
+    const response = await callGroqWithRetry(prompt, PRIMARY_MODEL);
+    return response.trim().replace(/^["']|["']$/g, '');
+  } catch (error) {
+    console.error('[Preview Summary] LLM failed, using fallback:', error);
+    // Fallback summary
+    const criticalCount = reportData.findings?.filter((f: any) => f.severity === 'critical').length || 0;
+    const highCount = reportData.findings?.filter((f: any) => f.severity === 'high').length || 0;
+    
+    if (criticalCount > 0 || highCount > 0) {
+      return `We've completed a comprehensive security audit of your application and identified ${criticalCount + highCount} high-priority security issues that need immediate attention. Our analysis uncovered vulnerabilities in your ${reportData.techStack?.framework || 'application'} deployment that could expose user data or compromise your platform. Unlock the full report to see detailed evidence, step-by-step remediation guides, and prioritized recommendations to secure your application.`;
+    } else {
+      return `We've completed a comprehensive security analysis of your ${reportData.techStack?.framework || 'application'} and found several areas for improvement. Our scan identified configuration issues and security best practices that could strengthen your application's defenses. Unlock the full report to see detailed findings, actionable recommendations, and insights into your tech stack, SEO performance, and security posture.`;
+    }
   }
 }
 

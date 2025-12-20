@@ -14,10 +14,13 @@ import { analyzeSEO } from '../analyzer/seo';
 import { copyAnalyzer } from '../analyzer/copy';
 import { performDeepSecurityAnalysis } from '../analyzer/deep-security';
 import { scanVibeCodingVulnerabilities } from '../analyzer/vibe-coding-vulnerabilities';
-import { analyzeWithAI } from '../ai/groq';
+import { analyzeWithAI, generatePreviewSummary } from '../ai/groq';
 import { generateReport } from '../reporter/generator';
 import { eventBus } from '../communication';
 import type { Job, JobStatus } from '../../types';
+import { db } from '../../lib/db';
+import { reports } from '../../lib/db/schema';
+import { decryptCredentials } from '../../lib/encryption';
 
 let redis: any;
 if (process.env.REDIS_URL) {
@@ -79,8 +82,9 @@ async function updateJobStatus(jobId: string, status: JobStatus, data?: Partial<
   }
 }
 
-const redisConnection = (process.env.REDIS_URL || process.env.UPSTASH_REDIS_URL)
-  ? new IORedis(process.env.REDIS_URL || process.env.UPSTASH_REDIS_URL, {
+const redisUrl = process.env.REDIS_URL || process.env.UPSTASH_REDIS_URL;
+const redisConnection = redisUrl
+  ? new IORedis(redisUrl, {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
       retryStrategy(times) {
@@ -112,8 +116,20 @@ export function createWorker(queueName: string = 'scan-queue') {
   }
   return new Worker(
     queueName,
-    async (job: BullJob<{ url: string; email?: string; jobId: string; credentials?: { username?: string; password?: string; email?: string } }>) => {
-      const { url, email, jobId, credentials } = job.data;
+    async (job: BullJob<{ url: string; email?: string; jobId: string; credentials?: { username?: string; password?: string; email?: string } | any }>) => {
+      const { url, email, jobId, credentials: rawCredentials } = job.data;
+      
+      // Decrypt credentials if encrypted (backward compatible with plaintext)
+      let credentials: { username?: string; password?: string; email?: string } | undefined = undefined;
+      if (rawCredentials) {
+        const decrypted = decryptCredentials(rawCredentials);
+        if (decrypted) {
+          credentials = decrypted;
+        } else {
+          // If decryption failed, try using raw credentials as-is (backward compat)
+          credentials = typeof rawCredentials === 'string' ? JSON.parse(rawCredentials) : rawCredentials;
+        }
+      }
 
       try {
         await updateJobStatus(jobId, 'scanning');
@@ -190,7 +206,7 @@ export function createWorker(queueName: string = 'scan-queue') {
 
         await updateJobStatus(jobId, 'generating');
 
-        const { html, pdf } = await generateReport(analysis, findings, url, jobId, eventBus);
+        const { html, pdf } = await generateReport(analysis, findings, url, jobId, eventBus, vibeCodingVulns);
 
         const reportUrl = `/api/report/${jobId}`;
         const jobData = await redis.get(`job:${jobId}`);
@@ -285,10 +301,38 @@ export function createWorker(queueName: string = 'scan-queue') {
             scanDuration: Date.now() - (job?.createdAt || Date.now()),
           },
         };
+
+        // Generate compelling preview summary
+        try {
+          const previewSummary = await generatePreviewSummary(report, eventBus, jobId);
+          report.previewSummary = previewSummary;
+        } catch (error) {
+          console.error('[Worker] Failed to generate preview summary:', error);
+          // Continue without preview summary
+        }
+
         if (process.env.REDIS_URL) {
           await redis.setex(`report:${jobId}`, 2592000, JSON.stringify(report));
         } else {
           await redis.setex(`report:${jobId}`, 2592000, report);
+        }
+
+        // Dual-write: Save to PostgreSQL for long-term persistence
+        try {
+          await db.insert(reports).values({
+            jobId,
+            url: job.url,
+            reportData: report,
+          }).onConflictDoUpdate({
+            target: reports.jobId,
+            set: {
+              reportData: report,
+              url: job.url,
+            },
+          });
+        } catch (dbError) {
+          console.error('[Worker] Failed to save report to DB:', dbError);
+          // Continue even if DB fails - Redis is primary cache
         }
 
         await updateJobStatus(jobId, 'completed', {

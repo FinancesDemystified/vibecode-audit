@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --hostname localhost --port 3000",
+    "predev": "./fix-permissions.sh",
+    "dev": "next dev --hostname 127.0.0.1 --port 3000",
     "dev:alt": "PORT=3001 HOSTNAME=127.0.0.1 next dev",
     "build": "next build",
     "start": "next start"

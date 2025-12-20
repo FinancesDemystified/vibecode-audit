@@ -11,7 +11,8 @@ export async function generateReport(
   findings: Finding[],
   url: string,
   jobId: string,
-  eventBus: EventBus
+  eventBus: EventBus,
+  vibeCodingVulns?: any
 ): Promise<{ html: string; pdf?: Buffer }> {
   await eventBus.publish(jobId, {
     type: 'agent.started',
@@ -46,6 +47,14 @@ export async function generateReport(
     .severity.medium { background: #fef3c7; color: #854d0e; }
     .severity.low { background: #dbeafe; color: #1e40af; }
     .recommendation { margin: 10px 0; padding: 10px; background: #f0f9ff; border-radius: 4px; }
+    .explanation { margin: 15px 0; padding: 15px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 4px; }
+    .explanation h4 { margin-top: 0; color: #1e40af; font-size: 14px; }
+    .explanation p { margin: 8px 0; font-size: 14px; line-height: 1.6; }
+    .vibe-coding { margin: 30px 0; padding: 20px; background: #faf5ff; border: 2px solid #c084fc; border-radius: 8px; }
+    .vibe-coding h3 { margin-top: 0; color: #6b21a8; }
+    .vibe-section { margin: 15px 0; padding: 12px; background: white; border-radius: 4px; }
+    .vibe-section h4 { margin-top: 0; font-size: 16px; }
+    .vibe-item { margin: 8px 0; padding: 8px; background: #f9fafb; border-left: 3px solid #c084fc; }
     .limitations { margin-top: 40px; padding: 20px; background: #fef3c7; border-radius: 8px; }
     .cta { margin-top: 30px; padding: 20px; background: #1e40af; color: white; border-radius: 8px; text-align: center; }
     .cta a { color: white; font-weight: bold; }
@@ -73,6 +82,15 @@ export async function generateReport(
         <h3>${f.type}</h3>
         <p><strong>Evidence:</strong> ${f.evidence}</p>
         ${f.cwe ? `<p><strong>CWE:</strong> ${f.cwe}</p>` : ''}
+        ${f.explanation ? `
+          <div class="explanation">
+            <h4>Why This Matters</h4>
+            <p><strong>What it means:</strong> ${f.explanation.whatItMeans}</p>
+            <p><strong>Why it's a problem:</strong> ${f.explanation.whyItsAProblem}</p>
+            <p><strong>Who it affects:</strong> ${f.explanation.whoItAffects}</p>
+            <p><strong>When it matters:</strong> ${f.explanation.whenItMatters}</p>
+          </div>
+        ` : ''}
         <p><strong>Recommendation:</strong> ${f.recommendation}</p>
       </div>
     `).join('')}
@@ -86,6 +104,70 @@ export async function generateReport(
       </div>
     `).join('')}
   </section>
+
+  ${vibeCodingVulns ? `
+    <section class="vibe-coding">
+      <h3>🔍 Vibe-Coding Vulnerability Analysis</h3>
+      <p><strong>Overall Risk:</strong> <span style="color: ${vibeCodingVulns.overallRisk === 'critical' ? '#dc2626' : vibeCodingVulns.overallRisk === 'high' ? '#ea580c' : vibeCodingVulns.overallRisk === 'medium' ? '#ca8a04' : '#16a34a'}">${vibeCodingVulns.overallRisk?.toUpperCase() || 'N/A'}</span></p>
+      <p><strong>Score:</strong> ${vibeCodingVulns.score || 'N/A'}/10</p>
+      
+      ${vibeCodingVulns.hardCodedSecrets && vibeCodingVulns.hardCodedSecrets.length > 0 ? `
+        <div class="vibe-section">
+          <h4 style="color: #dc2626;">🚨 Hard-Coded Secrets (${vibeCodingVulns.hardCodedSecrets.length})</h4>
+          ${vibeCodingVulns.hardCodedSecrets.map((s: any) => `
+            <div class="vibe-item">
+              <strong>Type:</strong> ${s.type}<br>
+              <strong>Location:</strong> ${s.location || 'Unknown'}<br>
+              <strong>Risk:</strong> ${s.risk || 'High'}
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+      
+      ${vibeCodingVulns.clientSideAuth && vibeCodingVulns.clientSideAuth.detected ? `
+        <div class="vibe-section">
+          <h4 style="color: #ea580c;">⚠️ Client-Side Authentication Detected</h4>
+          <p>${vibeCodingVulns.clientSideAuth.description || 'Authentication logic appears to be handled in the frontend, which is a security risk.'}</p>
+        </div>
+      ` : ''}
+      
+      ${vibeCodingVulns.unauthenticatedApiAccess && vibeCodingVulns.unauthenticatedApiAccess.length > 0 ? `
+        <div class="vibe-section">
+          <h4 style="color: #ea580c;">⚠️ Unauthenticated API Endpoints (${vibeCodingVulns.unauthenticatedApiAccess.length})</h4>
+          ${vibeCodingVulns.unauthenticatedApiAccess.map((api: any) => `
+            <div class="vibe-item">
+              <strong>Endpoint:</strong> ${api.endpoint || 'Unknown'}<br>
+              <strong>Method:</strong> ${api.method || 'GET'}<br>
+              <strong>Risk:</strong> ${api.risk || 'High'}
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+      
+      ${vibeCodingVulns.backendMisconfigurations && vibeCodingVulns.backendMisconfigurations.length > 0 ? `
+        <div class="vibe-section">
+          <h4 style="color: #ca8a04;">⚠️ Backend Misconfigurations (${vibeCodingVulns.backendMisconfigurations.length})</h4>
+          ${vibeCodingVulns.backendMisconfigurations.map((m: any) => `
+            <div class="vibe-item">
+              <strong>Issue:</strong> ${m.issue || 'Unknown'}<br>
+              <strong>Description:</strong> ${m.description || ''}
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+      
+      ${vibeCodingVulns.recommendations && vibeCodingVulns.recommendations.length > 0 ? `
+        <div class="vibe-section">
+          <h4>Recommendations</h4>
+          ${vibeCodingVulns.recommendations.map((r: any) => `
+            <div class="vibe-item">
+              <strong>${r.priority || 'Medium'} Priority:</strong> ${r.recommendation || r.action || ''}
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    </section>
+  ` : ''}
 
   <div class="limitations">
     <h3>⚠️ Limitations</h3>

@@ -12,8 +12,9 @@ import { redis } from '../lib/redis';
 import { randomUUID } from 'crypto';
 import { sendAccessEmail } from '../lib/email';
 import { db } from '../lib/db';
-import { emailCaptures, scanMetrics } from '../lib/db/schema';
+import { emailCaptures, scanMetrics, reports } from '../lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { encryptCredentials } from '../lib/encryption';
 
 export const scanRouter = router({
   submit: publicProcedure
@@ -30,13 +31,20 @@ export const scanRouter = router({
     )
     .mutation(async ({ input }) => {
       const jobId = randomUUID();
+      
+      // Encrypt credentials if provided
+      let encryptedCredentials = null;
+      if (input.credentials) {
+        encryptedCredentials = encryptCredentials(input.credentials);
+      }
+      
       const job = {
         id: jobId,
         url: input.url,
         status: 'pending' as const,
         createdAt: Date.now(),
         email: input.email,
-        credentials: input.credentials,
+        credentials: encryptedCredentials || input.credentials, // Store encrypted or plaintext
       };
 
       if (process.env.REDIS_URL) {
@@ -78,6 +86,17 @@ export const scanRouter = router({
   report: publicProcedure
     .input(z.object({ jobId: z.string().uuid() }))
     .query(async ({ input }) => {
+      // Check DB first for long-term persistence
+      try {
+        const dbReport = await db.select().from(reports).where(eq(reports.jobId, input.jobId)).limit(1);
+        if (dbReport.length > 0) {
+          return dbReport[0].reportData;
+        }
+      } catch (dbError) {
+        console.error('[Scan Router] DB query failed, falling back to Redis:', dbError);
+      }
+
+      // Fallback to Redis cache
       const reportData = await redis.get(`report:${input.jobId}`);
       if (!reportData) {
         throw new Error('REPORT_NOT_FOUND');
@@ -89,12 +108,25 @@ export const scanRouter = router({
   preview: publicProcedure
     .input(z.object({ jobId: z.string().uuid() }))
     .query(async ({ input }) => {
-      const reportData = await redis.get(`report:${input.jobId}`);
-      if (!reportData) {
-        throw new Error('REPORT_NOT_FOUND');
+      // Check DB first for long-term persistence
+      let fullReport: any;
+      try {
+        const dbReport = await db.select().from(reports).where(eq(reports.jobId, input.jobId)).limit(1);
+        if (dbReport.length > 0) {
+          fullReport = dbReport[0].reportData;
+        }
+      } catch (dbError) {
+        console.error('[Scan Router] DB query failed, falling back to Redis:', dbError);
       }
-      
-      const fullReport = process.env.REDIS_URL ? JSON.parse(reportData) : reportData;
+
+      // Fallback to Redis cache
+      if (!fullReport) {
+        const reportData = await redis.get(`report:${input.jobId}`);
+        if (!reportData) {
+          throw new Error('REPORT_NOT_FOUND');
+        }
+        fullReport = process.env.REDIS_URL ? JSON.parse(reportData) : reportData;
+      }
       
       // Return only preview data
       return {
@@ -102,6 +134,7 @@ export const scanRouter = router({
         url: fullReport.url,
         score: fullReport.score,
         timestamp: fullReport.timestamp,
+        previewSummary: fullReport.previewSummary || null,
         techStack: fullReport.techStack,
         findingsSummary: {
           total: fullReport.findings?.length || 0,
@@ -116,14 +149,14 @@ export const scanRouter = router({
             // Remove evidence and recommendations
           })) || [],
         },
-        vibeCodingSummary: {
-          overallRisk: fullReport.vibeCodingVulnerabilities?.overallRisk,
-          score: fullReport.vibeCodingVulnerabilities?.score,
-          secretsCount: fullReport.vibeCodingVulnerabilities?.hardCodedSecrets?.length || 0,
-          clientSideAuthDetected: fullReport.vibeCodingVulnerabilities?.clientSideAuth?.detected || false,
-          unauthenticatedApisCount: fullReport.vibeCodingVulnerabilities?.unauthenticatedApiAccess?.length || 0,
-          misconfigurationsCount: fullReport.vibeCodingVulnerabilities?.backendMisconfigurations?.length || 0,
-        },
+        vibeCodingSummary: fullReport.vibeCodingVulnerabilities ? {
+          overallRisk: fullReport.vibeCodingVulnerabilities.overallRisk || null,
+          score: fullReport.vibeCodingVulnerabilities.score || null,
+          secretsCount: fullReport.vibeCodingVulnerabilities.hardCodedSecrets?.length || 0,
+          clientSideAuthDetected: fullReport.vibeCodingVulnerabilities.clientSideAuth?.detected || false,
+          unauthenticatedApisCount: fullReport.vibeCodingVulnerabilities.unauthenticatedApiAccess?.length || 0,
+          misconfigurationsCount: fullReport.vibeCodingVulnerabilities.backendMisconfigurations?.length || 0,
+        } : null,
         deepSecuritySummary: {
           overallScore: fullReport.deepSecurity?.overallScore,
           hasPrivacyPolicy: fullReport.deepSecurity?.securityCopyAnalysis?.privacyPolicy?.found || false,

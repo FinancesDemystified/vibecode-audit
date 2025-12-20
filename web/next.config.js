@@ -1,11 +1,28 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     // Ensure subpath exports are resolved correctly
     config.resolve.conditionNames = ['import', 'require', 'default'];
     // Enable package.json exports field resolution
     config.resolve.exportsFields = ['exports', 'main'];
+    
+    // Externalize server-side dependencies for API routes
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        'bullmq': 'commonjs bullmq',
+        'ioredis': 'commonjs ioredis',
+        '@upstash/redis': 'commonjs @upstash/redis',
+        '@upstash/ratelimit': 'commonjs @upstash/ratelimit',
+        'drizzle-orm': 'commonjs drizzle-orm',
+        '@neondatabase/serverless': 'commonjs @neondatabase/serverless',
+        'pg': 'commonjs pg',
+        'groq-sdk': 'commonjs groq-sdk',
+        'resend': 'commonjs resend',
+      });
+    }
+    
     return config;
   },
   async headers() {
