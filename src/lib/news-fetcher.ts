@@ -9,8 +9,18 @@ const NEWS_KEY = 'vibe:breach-news';
 const TTL = 86400; // 24hrs
 
 const KEYWORDS = [
-  // AI tools
-  'cursor', 'bolt', 'github copilot', 'chatgpt', 'claude', 'ai-generated', 'ai code',
+  // AI coding tools
+  'cursor', 'bolt', 'github copilot', 'copilot', 'chatgpt', 'claude', 'anthropic',
+  'v0', 'v0.dev', 'cline', 'aider', 'codeium', 'tabnine', 'codewhisperer',
+  'sourcegraph cody', 'cody', 'replit ai', 'phind', 'perplexity', 'autogpt',
+  'langchain', 'llamaindex', 'openai codex', 'codex',
+  // AI coding terms
+  'ai-generated', 'ai code', 'ai coding', 'ai-generated code', 'ai-assisted coding',
+  'ai pair programming', 'ai code completion', 'ai code review', 'ai debugging',
+  'ai refactoring', 'ai testing', 'ai documentation', 'ai code generation',
+  'ai development', 'ai programming', 'ai software', 'ai application',
+  'llm code', 'large language model', 'prompt engineering', 'ai agent',
+  'ai assistant', 'automated coding', 'ai-powered', 'code generation',
   // Frameworks
   'nextjs', 'next.js', 'react', 'vue', 'svelte', 'angular', 'nuxt', 'remix',
   // Platforms
