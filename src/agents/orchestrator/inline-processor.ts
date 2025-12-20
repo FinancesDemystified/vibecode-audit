@@ -35,44 +35,56 @@ export async function processInlineScan(
   credentials?: Credentials
 ): Promise<void> {
   try {
-    // Stage 1: Crawling
+    // Stage 1: Discovery
     await updateStatus(jobId, 'scanning', { 
-      progress: 5, 
-      currentStage: 'Crawling', 
-      stageMessage: 'Fetching target URL...' 
+      progress: 3, 
+      currentStage: 'Discovery', 
+      stageMessage: 'Connecting to target...' 
     });
 
     const crawlResult = await crawlUrl(url, eventBus, jobId);
     
     await updateStatus(jobId, 'scanning', { 
-      progress: 15, 
-      currentStage: 'Crawling', 
-      stageMessage: 'Extracting page data...' 
+      progress: 8, 
+      currentStage: 'Discovery', 
+      stageMessage: 'Mapping site architecture...' 
     });
     
     const securityData = await extractSecurityData(crawlResult, eventBus, jobId);
     
     await updateStatus(jobId, 'scanning', { 
-      progress: 25, 
-      currentStage: 'Crawling', 
-      stageMessage: 'Discovering protected routes...' 
+      progress: 12, 
+      currentStage: 'Discovery', 
+      stageMessage: 'Detecting tech stack & frameworks...' 
+    });
+    
+    await updateStatus(jobId, 'scanning', { 
+      progress: 16, 
+      currentStage: 'Discovery', 
+      stageMessage: 'Finding login & auth endpoints...' 
     });
     
     const postAuthData = await discoverPostAuth(url, securityData, crawlResult.html, eventBus, jobId);
     
+    // Stage 2: Content Analysis
     await updateStatus(jobId, 'scanning', { 
-      progress: 30, 
-      currentStage: 'Analyzing', 
-      stageMessage: 'SEO & meta analysis...' 
+      progress: 22, 
+      currentStage: 'Content Analysis', 
+      stageMessage: 'Analyzing SEO & meta tags...' 
     });
     
     const seoData = await analyzeSEO(crawlResult, eventBus, jobId);
     
-    // Stage 2: Analysis
     await updateStatus(jobId, 'scanning', { 
-      progress: 35, 
-      currentStage: 'Analyzing', 
-      stageMessage: 'Analyzing copy & content...' 
+      progress: 28, 
+      currentStage: 'Content Analysis', 
+      stageMessage: 'Auditing web copy & messaging...' 
+    });
+    
+    await updateStatus(jobId, 'scanning', { 
+      progress: 32, 
+      currentStage: 'Content Analysis', 
+      stageMessage: 'Checking trust signals & social proof...' 
     });
     const copyAnalysis = await copyAnalyzer.analyzeCopy(crawlResult.html, url);
 
@@ -80,9 +92,9 @@ export async function processInlineScan(
     let authenticatedScan = null;
     if (credentials && (credentials.password || credentials.username || credentials.email)) {
       await updateStatus(jobId, 'authenticating', { 
-        progress: 40, 
-        currentStage: 'Authenticating', 
-        stageMessage: 'Attempting authenticated scan...' 
+        progress: 38, 
+        currentStage: 'Auth Testing', 
+        stageMessage: 'Testing login flow security...' 
       });
       authenticatedScan = await performAuthenticatedScan(
         url,
@@ -95,17 +107,29 @@ export async function processInlineScan(
 
     // Stage 3: Security Scan
     await updateStatus(jobId, 'analyzing', { 
-      progress: 45, 
+      progress: 42, 
       currentStage: 'Security Scan', 
-      stageMessage: 'Scanning for vulnerabilities...' 
+      stageMessage: 'Testing for XSS vulnerabilities...' 
     });
 
     const findings = await scanVulnerabilities(securityData, eventBus, jobId);
     
     await updateStatus(jobId, 'analyzing', { 
-      progress: 55, 
+      progress: 48, 
       currentStage: 'Security Scan', 
-      stageMessage: 'Deep security analysis...' 
+      stageMessage: 'Checking CORS & headers...' 
+    });
+    
+    await updateStatus(jobId, 'analyzing', { 
+      progress: 54, 
+      currentStage: 'Security Scan', 
+      stageMessage: 'Analyzing cookie security...' 
+    });
+    
+    await updateStatus(jobId, 'analyzing', { 
+      progress: 58, 
+      currentStage: 'Deep Security', 
+      stageMessage: 'Testing authentication bypass...' 
     });
     const deepSecurityAnalysis = await performDeepSecurityAnalysis(
       url,
@@ -116,10 +140,23 @@ export async function processInlineScan(
       credentials
     );
     
+    // Vibe-coding vulnerability scan
     await updateStatus(jobId, 'analyzing', { 
-      progress: 65, 
-      currentStage: 'Security Scan', 
-      stageMessage: 'Vibe-coding vulnerability scan...' 
+      progress: 64, 
+      currentStage: 'Vibe-Code Scan', 
+      stageMessage: 'Scanning for hardcoded secrets...' 
+    });
+    
+    await updateStatus(jobId, 'analyzing', { 
+      progress: 68, 
+      currentStage: 'Vibe-Code Scan', 
+      stageMessage: 'Detecting exposed API keys...' 
+    });
+    
+    await updateStatus(jobId, 'analyzing', { 
+      progress: 72, 
+      currentStage: 'Vibe-Code Scan', 
+      stageMessage: 'Finding unprotected endpoints...' 
     });
     const vibeCodingVulns = await scanVibeCodingVulnerabilities(
       url,
@@ -129,18 +166,25 @@ export async function processInlineScan(
       jobId
     );
     
+    // AI Analysis
     await updateStatus(jobId, 'analyzing', { 
-      progress: 75, 
-      currentStage: 'Analyzing', 
-      stageMessage: 'AI analysis & scoring...' 
+      progress: 78, 
+      currentStage: 'AI Analysis', 
+      stageMessage: 'AI analyzing vulnerability patterns...' 
+    });
+    
+    await updateStatus(jobId, 'analyzing', { 
+      progress: 82, 
+      currentStage: 'AI Analysis', 
+      stageMessage: 'Generating risk scores...' 
     });
     const analysis = await analyzeWithAI(findings, securityData, eventBus, jobId);
 
     // Stage 4: Report Generation
     await updateStatus(jobId, 'generating', { 
-      progress: 85, 
+      progress: 88, 
       currentStage: 'Generating Report', 
-      stageMessage: 'Compiling security report...' 
+      stageMessage: 'Building remediation steps...' 
     });
 
     const { html, pdf } = await generateReport(analysis, findings, url, jobId, eventBus, vibeCodingVulns);

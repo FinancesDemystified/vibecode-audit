@@ -22,11 +22,12 @@ interface LogEntry {
 }
 
 const STAGES = [
-  { key: 'init', label: 'Initializing', icon: '⚡' },
-  { key: 'crawl', label: 'Crawling', icon: '🕷️' },
-  { key: 'analyze', label: 'Analyzing', icon: '🔍' },
-  { key: 'security', label: 'Security Scan', icon: '🛡️' },
-  { key: 'report', label: 'Generating Report', icon: '📊' },
+  { key: 'discovery', label: 'Discovery', icon: '🔎' },
+  { key: 'content', label: 'Copy Audit', icon: '📝' },
+  { key: 'security', label: 'Security', icon: '🛡️' },
+  { key: 'vibe', label: 'Vibe-Code', icon: '⚡' },
+  { key: 'ai', label: 'AI Analysis', icon: '🤖' },
+  { key: 'report', label: 'Report', icon: '📊' },
 ];
 
 export default function WarRoomTerminal({ 
@@ -68,12 +69,13 @@ export default function WarRoomTerminal({
   // Determine current stage index for progress dots
   const getCurrentStageIndex = () => {
     const stage = currentStage.toLowerCase();
-    if (stage.includes('init')) return 0;
-    if (stage.includes('crawl')) return 1;
-    if (stage.includes('analy')) return 2;
-    if (stage.includes('secur') || stage.includes('test')) return 3;
-    if (stage.includes('report') || stage.includes('generat')) return 4;
-    return Math.floor((progress / 100) * 5);
+    if (stage.includes('discover') || stage.includes('connect') || stage.includes('map')) return 0;
+    if (stage.includes('content') || stage.includes('copy') || stage.includes('seo') || stage.includes('trust')) return 1;
+    if (stage.includes('security') || stage.includes('xss') || stage.includes('cors') || stage.includes('cookie') || stage.includes('deep')) return 2;
+    if (stage.includes('vibe') || stage.includes('secret') || stage.includes('api key') || stage.includes('endpoint')) return 3;
+    if (stage.includes('ai') || stage.includes('pattern') || stage.includes('score')) return 4;
+    if (stage.includes('report') || stage.includes('generat') || stage.includes('remediat') || stage.includes('complete')) return 5;
+    return Math.floor((progress / 100) * 6);
   };
 
   return (
