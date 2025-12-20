@@ -445,11 +445,11 @@ export default function Home() {
                   </div>
                 )}
 
-                {report.vibeCodingVulnerabilities.hardCodedSecrets?.length > 0 && (
+                {(report.vibeCodingVulnerabilities.hardCodedSecrets?.length ?? 0) > 0 && (
                   <div className="mb-6">
-                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Hard-Coded Secrets ({report.vibeCodingVulnerabilities.hardCodedSecrets.length})</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Hard-Coded Secrets ({report.vibeCodingVulnerabilities.hardCodedSecrets?.length ?? 0})</h4>
                     <div className="space-y-2">
-                      {report.vibeCodingVulnerabilities.hardCodedSecrets.map((secret, i) => (
+                      {report.vibeCodingVulnerabilities.hardCodedSecrets?.map((secret, i) => (
                         <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white">
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1">
@@ -470,11 +470,11 @@ export default function Home() {
                   </div>
                 )}
 
-                {report.vibeCodingVulnerabilities.unauthenticatedApiAccess?.length > 0 && (
+                {(report.vibeCodingVulnerabilities.unauthenticatedApiAccess?.length ?? 0) > 0 && (
                   <div className="mb-6">
-                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Unauthenticated API Endpoints ({report.vibeCodingVulnerabilities.unauthenticatedApiAccess.length})</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Unauthenticated API Endpoints ({report.vibeCodingVulnerabilities.unauthenticatedApiAccess?.length ?? 0})</h4>
                     <div className="space-y-2">
-                      {report.vibeCodingVulnerabilities.unauthenticatedApiAccess.map((endpoint, i) => (
+                      {report.vibeCodingVulnerabilities.unauthenticatedApiAccess?.map((endpoint, i) => (
                         <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white">
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
@@ -498,11 +498,11 @@ export default function Home() {
                   </div>
                 )}
 
-                {report.vibeCodingVulnerabilities.backendMisconfigurations?.length > 0 && (
+                {(report.vibeCodingVulnerabilities.backendMisconfigurations?.length ?? 0) > 0 && (
                   <div className="mb-6">
-                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Backend Misconfigurations ({report.vibeCodingVulnerabilities.backendMisconfigurations.length})</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Backend Misconfigurations ({report.vibeCodingVulnerabilities.backendMisconfigurations?.length ?? 0})</h4>
                     <div className="space-y-2">
-                      {report.vibeCodingVulnerabilities.backendMisconfigurations.map((misconfig, i) => (
+                      {report.vibeCodingVulnerabilities.backendMisconfigurations?.map((misconfig, i) => (
                         <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white">
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1">
@@ -523,33 +523,19 @@ export default function Home() {
                   </div>
                 )}
 
-                {report.vibeCodingVulnerabilities.fileUploadVulnerabilities?.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">File Upload Vulnerabilities ({report.vibeCodingVulnerabilities.fileUploadVulnerabilities.length})</h4>
-                    <div className="space-y-2">
-                      {report.vibeCodingVulnerabilities.fileUploadVulnerabilities.map((vuln, i) => (
-                        <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white">
-                          <p className="font-medium text-gray-900">{vuln.endpoint}</p>
-                          <p className="text-sm text-gray-600 mt-1">{vuln.evidence}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {report.vibeCodingVulnerabilities.clientSideAuth?.detected && (
                   <div className="mb-6 border border-gray-200 rounded-lg p-4 bg-white">
                     <h4 className="text-sm font-medium text-gray-900 mb-2 uppercase tracking-wide">Client-Side Authentication Detected</h4>
-                    <p className="text-sm text-gray-600">{report.vibeCodingVulnerabilities.clientSideAuth.evidence?.join(', ') || 'Client-side authentication implementation detected'}</p>
+                    <p className="text-sm text-gray-600">Client-side authentication implementation detected: {report.vibeCodingVulnerabilities.clientSideAuth.authImplementation}</p>
                     <p className="text-xs text-gray-500 mt-2">Risk: {report.vibeCodingVulnerabilities.clientSideAuth.risk}</p>
                   </div>
                 )}
 
-                {report.vibeCodingVulnerabilities.recommendations?.length > 0 && (
+                {(report.vibeCodingVulnerabilities.recommendations?.length ?? 0) > 0 && (
                   <div>
-                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Recommendations ({report.vibeCodingVulnerabilities.recommendations.length})</h4>
+                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Recommendations ({report.vibeCodingVulnerabilities.recommendations?.length ?? 0})</h4>
                     <div className="space-y-3">
-                      {report.vibeCodingVulnerabilities.recommendations.map((rec, i) => (
+                      {report.vibeCodingVulnerabilities.recommendations?.map((rec, i) => (
                         <div key={i} className="border-l border-gray-300 pl-4 py-3 bg-gray-50 rounded-r">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -567,7 +553,6 @@ export default function Home() {
                 {report.vibeCodingVulnerabilities.hardCodedSecrets?.length === 0 &&
                  report.vibeCodingVulnerabilities.unauthenticatedApiAccess?.length === 0 &&
                  report.vibeCodingVulnerabilities.backendMisconfigurations?.length === 0 &&
-                 report.vibeCodingVulnerabilities.fileUploadVulnerabilities?.length === 0 &&
                  !report.vibeCodingVulnerabilities.clientSideAuth?.detected &&
                  report.vibeCodingVulnerabilities.recommendations?.length === 0 && (
                   <div className="border border-gray-200 rounded-lg p-6 text-center bg-gray-50">
