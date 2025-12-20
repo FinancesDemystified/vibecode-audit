@@ -115,6 +115,7 @@ export const reportSchema = z.object({
   timestamp: z.number(),
   score: z.number().min(1).max(10),
   summary: z.string(),
+  previewSummary: z.string().optional(),
   findings: z.array(findingSchema),
   recommendations: z.array(recommendationSchema),
   confidence: z.number().min(0).max(1),

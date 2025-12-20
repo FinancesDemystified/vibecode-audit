@@ -236,7 +236,7 @@ export function createWorker(queueName: string = 'scan-queue') {
           };
         });
 
-        const report = {
+        const report: any = {
           jobId,
           url,
           timestamp: Date.now(),
