@@ -314,8 +314,8 @@ export default function Home() {
                   )}
 
                   {preview && (
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-4">
-                      <p className="font-semibold text-purple-900 mb-2">🔍 Vibe-Coding Analysis:</p>
+                    <div className="border border-gray-200 rounded-lg p-4 mt-4 bg-white">
+                      <p className="text-sm font-medium text-gray-900 mb-2 uppercase tracking-wide">Vibe-Coding Analysis</p>
                       {preview.vibeCodingSummary ? (
                         <>
                           {(preview.vibeCodingSummary.secretsCount > 0 || 
@@ -343,7 +343,7 @@ export default function Home() {
                             <p className="text-xs text-gray-500 mt-2">
                               Risk Level: <span className="font-semibold">{preview.vibeCodingSummary.overallRisk.toUpperCase()}</span>
                               {preview.vibeCodingSummary.score !== undefined && (
-                                <span> • Score: {preview.vibeCodingSummary.score}/10</span>
+                                <span> • Score: {preview.vibeCodingSummary.score}/100</span>
                               )}
                             </p>
                           )}
@@ -445,7 +445,7 @@ export default function Home() {
                   </div>
                 )}
 
-                {report.vibeCodingVulnerabilities.hardCodedSecrets && report.vibeCodingVulnerabilities.hardCodedSecrets.length > 0 && (
+                {report.vibeCodingVulnerabilities.hardCodedSecrets?.length > 0 && (
                   <div className="mb-6">
                     <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Hard-Coded Secrets ({report.vibeCodingVulnerabilities.hardCodedSecrets.length})</h4>
                     <div className="space-y-2">
@@ -470,7 +470,7 @@ export default function Home() {
                   </div>
                 )}
 
-                {report.vibeCodingVulnerabilities.unauthenticatedApiAccess && report.vibeCodingVulnerabilities.unauthenticatedApiAccess.length > 0 && (
+                {report.vibeCodingVulnerabilities.unauthenticatedApiAccess?.length > 0 && (
                   <div className="mb-6">
                     <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Unauthenticated API Endpoints ({report.vibeCodingVulnerabilities.unauthenticatedApiAccess.length})</h4>
                     <div className="space-y-2">
@@ -498,7 +498,54 @@ export default function Home() {
                   </div>
                 )}
 
-                {report.vibeCodingVulnerabilities.recommendations && report.vibeCodingVulnerabilities.recommendations.length > 0 && (
+                {report.vibeCodingVulnerabilities.backendMisconfigurations?.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Backend Misconfigurations ({report.vibeCodingVulnerabilities.backendMisconfigurations.length})</h4>
+                    <div className="space-y-2">
+                      {report.vibeCodingVulnerabilities.backendMisconfigurations.map((misconfig, i) => (
+                        <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900">{misconfig.type}</p>
+                              <p className="text-sm text-gray-600 mt-1">{misconfig.evidence}</p>
+                            </div>
+                            <span className={`text-xs px-2.5 py-1 rounded-md font-medium flex-shrink-0 ${
+                              misconfig.severity === 'critical' ? 'bg-gray-900 text-white' :
+                              misconfig.severity === 'high' ? 'bg-gray-800 text-white' :
+                              'bg-gray-700 text-white'
+                            }`}>
+                              {misconfig.severity}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {report.vibeCodingVulnerabilities.fileUploadVulnerabilities?.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">File Upload Vulnerabilities ({report.vibeCodingVulnerabilities.fileUploadVulnerabilities.length})</h4>
+                    <div className="space-y-2">
+                      {report.vibeCodingVulnerabilities.fileUploadVulnerabilities.map((vuln, i) => (
+                        <div key={i} className="border border-gray-200 rounded-lg p-4 bg-white">
+                          <p className="font-medium text-gray-900">{vuln.endpoint}</p>
+                          <p className="text-sm text-gray-600 mt-1">{vuln.evidence}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {report.vibeCodingVulnerabilities.clientSideAuth?.detected && (
+                  <div className="mb-6 border border-gray-200 rounded-lg p-4 bg-white">
+                    <h4 className="text-sm font-medium text-gray-900 mb-2 uppercase tracking-wide">Client-Side Authentication Detected</h4>
+                    <p className="text-sm text-gray-600">{report.vibeCodingVulnerabilities.clientSideAuth.evidence?.join(', ') || 'Client-side authentication implementation detected'}</p>
+                    <p className="text-xs text-gray-500 mt-2">Risk: {report.vibeCodingVulnerabilities.clientSideAuth.risk}</p>
+                  </div>
+                )}
+
+                {report.vibeCodingVulnerabilities.recommendations?.length > 0 && (
                   <div>
                     <h4 className="text-sm font-medium text-gray-900 mb-3 uppercase tracking-wide">Recommendations ({report.vibeCodingVulnerabilities.recommendations.length})</h4>
                     <div className="space-y-3">

@@ -25,7 +25,7 @@ export default function ReportSummary({ report, preview, criticalCount, totalIss
         <div>
           <p className="text-sm text-gray-500 mb-1">Security Score</p>
           <div className="text-5xl font-semibold text-gray-900">
-            {score}<span className="text-2xl text-gray-500 font-normal">/10</span>
+            {score}<span className="text-2xl text-gray-500 font-normal">/100</span>
           </div>
         </div>
         <div className="flex gap-8">
