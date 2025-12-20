@@ -353,6 +353,31 @@ export default function Home() {
                       )}
                     </div>
                   )}
+
+                  {preview?.breachNews && preview.breachNews.length > 0 && (
+                    <div className="border border-gray-200 rounded-lg p-4 mt-4 bg-white">
+                      <p className="text-sm font-medium text-gray-900 mb-2 uppercase tracking-wide">Recent Security Incidents</p>
+                      <p className="text-xs text-gray-500 mb-3">Latest vulnerabilities relevant to your tech stack</p>
+                      <div className="space-y-2">
+                        {preview.breachNews.map((news: any, i: number) => (
+                          <div key={i} className="text-sm">
+                            <a 
+                              href={news.link} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-gray-900 hover:text-blue-600 font-medium line-clamp-2"
+                            >
+                              {news.title}
+                            </a>
+                            <p className="text-xs text-gray-400 mt-0.5">{news.pubDate}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-3 pt-3 border-t border-gray-100">
+                        Unlock full report to see how these relate to your specific vulnerabilities
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {showEmailGate && !showVerificationGate && jobId && (

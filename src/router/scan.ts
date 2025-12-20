@@ -164,6 +164,7 @@ export const scanRouter = router({
           unauthenticatedApisCount: fullReport.vibeCodingVulnerabilities.unauthenticatedApiAccess?.length || 0,
           misconfigurationsCount: fullReport.vibeCodingVulnerabilities.backendMisconfigurations?.length || 0,
         } : null,
+        breachNews: fullReport.breachNews?.slice(0, 3) || [],
         deepSecuritySummary: {
           overallScore: fullReport.deepSecurity?.overallScore,
           hasPrivacyPolicy: fullReport.deepSecurity?.securityCopyAnalysis?.privacyPolicy?.found || false,
