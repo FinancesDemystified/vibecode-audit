@@ -519,6 +519,18 @@ export default function Home() {
                     </div>
                   </div>
                 )}
+
+                {report.vibeCodingVulnerabilities.hardCodedSecrets?.length === 0 &&
+                 report.vibeCodingVulnerabilities.unauthenticatedApiAccess?.length === 0 &&
+                 report.vibeCodingVulnerabilities.backendMisconfigurations?.length === 0 &&
+                 report.vibeCodingVulnerabilities.fileUploadVulnerabilities?.length === 0 &&
+                 !report.vibeCodingVulnerabilities.clientSideAuth?.detected &&
+                 report.vibeCodingVulnerabilities.recommendations?.length === 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                    <p className="text-green-800 font-medium">✓ No vibe-coding vulnerabilities detected</p>
+                    <p className="text-sm text-green-700 mt-1">Scanned for hardcoded secrets, exposed APIs, and backend misconfigurations</p>
+                  </div>
+                )}
               </div>
             )}
 
