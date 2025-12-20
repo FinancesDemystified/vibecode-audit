@@ -263,34 +263,21 @@ export function createWorker(queueName: string = 'scan-queue') {
           jobId
         );
         
-        // AI Analysis - show real cached vulnerabilities
-        const cacheKey = 'vibe:recent-vulns';
-        let cachedVulns: string[] = [];
-        try {
-          const cached = await redis.get(cacheKey);
-          cachedVulns = cached ? (typeof cached === 'string' ? JSON.parse(cached) : cached) : [];
-        } catch {}
-        
-        // Add current findings to cache (anonymized)
-        const newVulns = findings.slice(0, 3).map(f => `${f.type} (${f.severity})`);
-        if (newVulns.length) {
-          const updated = [...new Set([...newVulns, ...cachedVulns])].slice(0, 20);
-          await redis.setex(cacheKey, 86400, JSON.stringify(updated)); // 24hr TTL
-          cachedVulns = updated;
-        }
-        
+        // AI Analysis - real breach news
+        const { getBreachNews } = await import('../../lib/news-fetcher');
+        const news = await getBreachNews();
         const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)] || 'Analyzing patterns...';
         
         await updateJobStatus(jobId, 'analyzing', { 
           progress: 78, 
           currentStage: 'AI Analysis', 
-          stageMessage: cachedVulns.length ? `Recent: ${pick(cachedVulns)}` : 'Analyzing vulnerability patterns...'
+          stageMessage: news.length ? `Recent breach: ${pick(news)}` : 'Analyzing vulnerability patterns...'
         });
         
         await updateJobStatus(jobId, 'analyzing', { 
           progress: 82, 
           currentStage: 'AI Analysis', 
-          stageMessage: `Scoring against ${cachedVulns.length || 'known'} vibe-code risks...`
+          stageMessage: `Scoring against ${news.length || 'known'} vibe-code risks...`
         });
         const analysis = await analyzeWithAI(findings, securityData, eventBus, jobId);
 
