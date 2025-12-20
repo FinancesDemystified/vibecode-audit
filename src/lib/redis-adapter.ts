@@ -16,7 +16,7 @@ function getRedis() {
   const isProductionRedis = redisUrl?.includes('railway.internal') || redisUrl?.includes('.upstash.io');
   
   if (redisUrl && !(isLocalDev && isProductionRedis)) {
-    redisClient = new IORedis(process.env.REDIS_URL, {
+    redisClient = new IORedis(redisUrl, {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
       retryStrategy(times) {
