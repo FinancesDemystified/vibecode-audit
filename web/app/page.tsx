@@ -425,7 +425,7 @@ export default function Home() {
               </div>
             )}
 
-            {report.vibeCodingVulnerabilities && (
+                {report.vibeCodingVulnerabilities && (
               <div className="bg-white border-2 border-purple-200 rounded-xl p-6 shadow-lg">
                 <h3 className="text-xl font-bold mb-4 text-gray-900 flex items-center gap-2">
                   <span>🔍</span>
@@ -439,6 +439,21 @@ export default function Home() {
                     ({report.vibeCodingVulnerabilities.overallRisk?.toUpperCase() || 'N/A'})
                   </span>
                 </h3>
+
+                {(report as any).breachNews && (report as any).breachNews.length > 0 && (
+                  <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r">
+                    <h4 className="font-semibold text-yellow-900 mb-2">📰 Recent Breaches You Should Know About</h4>
+                    <ul className="space-y-2 text-sm text-gray-700">
+                      {(report as any).breachNews.map((item: string, i: number) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="text-yellow-600 mt-0.5">•</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="text-xs text-gray-600 mt-3">Updated daily from security news feeds</p>
+                  </div>
+                )}
 
                 {report.vibeCodingVulnerabilities.hardCodedSecrets && report.vibeCodingVulnerabilities.hardCodedSecrets.length > 0 && (
                   <div className="mb-6">

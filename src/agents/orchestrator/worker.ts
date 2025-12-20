@@ -378,6 +378,7 @@ export function createWorker(queueName: string = 'scan-queue') {
             overallRisk: vibeCodingVulns.overallRisk,
             score: vibeCodingVulns.score,
           },
+          breachNews: news.slice(0, 5),
           metadata: {
             version: '1.0.0',
             scanDuration: Date.now() - (job?.createdAt || Date.now()),
