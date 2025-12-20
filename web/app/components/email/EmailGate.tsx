@@ -11,7 +11,7 @@ interface EmailGateProps {
   jobId: string;
   url: string;
   issuesFound: number;
-  onUnlock: () => void;
+  onUnlock: (email: string) => void;
   onEmailSent: () => void;
 }
 
@@ -56,11 +56,11 @@ export default function EmailGate({ jobId, url, issuesFound, onUnlock, onEmailSe
 
       const data = await res.json();
       setEmailSent(true);
-      onEmailSent();
+      onUnlock(email); // Pass email to parent for verification
 
-      // In dev mode, auto-unlock if token provided
-      if (process.env.NODE_ENV === 'development' && data.result?.data?.accessToken) {
-        onUnlock();
+      // In dev mode, show code in console
+      if (process.env.NODE_ENV === 'development' && data.result?.data?.code) {
+        console.log('Dev mode verification code:', data.result.data.code);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send email');
@@ -70,16 +70,7 @@ export default function EmailGate({ jobId, url, issuesFound, onUnlock, onEmailSe
   };
 
   if (emailSent) {
-    return (
-      <div className="bg-green-50 border-2 border-green-500 rounded-xl p-6 text-center">
-        <div className="text-4xl mb-3">✅</div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Check Your Email!</h3>
-        <p className="text-gray-700">
-          We've sent a secure access link to <strong>{email}</strong>.
-          Click the link in your email to view your full security report.
-        </p>
-      </div>
-    );
+    return null; // Parent will show verification gate
   }
 
   return (
@@ -94,7 +85,7 @@ export default function EmailGate({ jobId, url, issuesFound, onUnlock, onEmailSe
         Get detailed evidence, specific locations, and step-by-step fix instructions for all {issuesFound} issues.
       </p>
       <p className="text-sm text-gray-600 mb-6">
-        We'll send you a secure access link instantly.
+        We'll send you a verification code to unlock the report.
       </p>
       {error && (
         <div className="bg-red-50 border-2 border-red-600 text-red-800 px-6 py-4 rounded-xl mb-4">

@@ -15,6 +15,7 @@ import { db } from '../lib/db';
 import { emailCaptures, scanMetrics, reports } from '../lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { encryptCredentials } from '../lib/encryption';
+import { processInlineScan } from '../agents/orchestrator/inline-processor';
 
 export const scanRouter = router({
   submit: publicProcedure
@@ -53,16 +54,20 @@ export const scanRouter = router({
         await redis.setex(`job:${jobId}`, 2592000, job);
       }
       
-      if (!scanQueue) {
-        throw new Error('Queue not available - Redis connection required for job processing');
+      if (scanQueue) {
+        // Production: Use BullMQ queue
+        await scanQueue.add('scan', { 
+          url: input.url, 
+          email: input.email, 
+          jobId,
+          credentials: input.credentials,
+        });
+      } else {
+        // Dev: Process inline (no Redis/BullMQ)
+        processInlineScan(jobId, input.url, input.credentials).catch(err => {
+          console.error('[Inline Scan] Failed:', err);
+        });
       }
-      
-      await scanQueue.add('scan', { 
-        url: input.url, 
-        email: input.email, 
-        jobId,
-        credentials: input.credentials,
-      });
 
       return { jobId, status: 'pending' };
     }),
@@ -77,7 +82,9 @@ export const scanRouter = router({
       const job = process.env.REDIS_URL ? JSON.parse(jobData) : jobData;
       return {
         status: job.status,
-        progress: job.progress,
+        progress: job.progress || 0,
+        currentStage: job.currentStage || '',
+        stageMessage: job.stageMessage || '',
         reportUrl: job.reportUrl,
         error: job.error,
       };
@@ -166,7 +173,7 @@ export const scanRouter = router({
       };
     }),
 
-  // Generate and send access token via email
+  // Send 6-digit verification code via email
   requestAccess: publicProcedure
     .input(z.object({ 
       jobId: z.string().uuid(),
@@ -186,22 +193,17 @@ export const scanRouter = router({
 
       const report = process.env.REDIS_URL ? JSON.parse(reportData) : reportData;
 
-      // Generate access token
+      // Generate 6-digit code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Store code in Redis (5 min TTL)
+      await redis.setex(`verify:${input.email}:${input.jobId}`, 300, code);
+      
+      // Generate access token for later
       const accessToken = randomUUID();
       
-      // Store token mapping in Redis (expires in 30 days)
-      await redis.setex(
-        `access:${accessToken}`,
-        2592000,
-        JSON.stringify({ 
-          jobId: input.jobId, 
-          email: input.email, 
-          name: input.name,
-          createdAt: Date.now() 
-        })
-      );
-
-      // Save to database
+      
+      // Save lead to database (before email sends)
       const issuesFound = report.findings?.length || 0;
       const criticalCount = report.findings?.filter((f: any) => f.severity === 'critical').length || 0;
       
@@ -222,43 +224,19 @@ export const scanRouter = router({
           techStack: report.techStack,
           emailSentAt: new Date(),
         });
-
-        // Also save scan metrics if not already saved
-        await db.insert(scanMetrics).values({
-          jobId: input.jobId,
-          url: report.url,
-          status: 'completed',
-          securityScore: report.score,
-          totalIssues: issuesFound,
-          criticalIssues: criticalCount,
-          highIssues: report.findings?.filter((f: any) => f.severity === 'high').length || 0,
-          mediumIssues: report.findings?.filter((f: any) => f.severity === 'medium').length || 0,
-          lowIssues: report.findings?.filter((f: any) => f.severity === 'low').length || 0,
-          techStack: report.techStack,
-          scanDuration: report.metadata?.scanDuration,
-          completedAt: new Date(),
-        }).onConflictDoNothing();
       } catch (dbError) {
         console.error('Database save failed:', dbError);
-        // Continue even if DB fails - don't block email
       }
 
-      // Send email with access link
+      // Send verification code email
       try {
-        await sendAccessEmail({
+        const { sendVerificationEmail } = await import('../lib/email');
+        await sendVerificationEmail({
           email: input.email,
           name: input.name,
-          jobId: input.jobId,
-          accessToken,
+          code,
           url: report.url,
-          issuesFound,
-          criticalCount,
         });
-
-        // Update email delivery status
-        await db.update(emailCaptures)
-          .set({ emailDelivered: true })
-          .where(eq(emailCaptures.accessToken, accessToken));
       } catch (error) {
         console.error('Failed to send email:', error);
         throw new Error('Failed to send email. Please try again.');
@@ -266,12 +244,99 @@ export const scanRouter = router({
 
       return { 
         success: true,
-        message: 'Access link sent to your email. Check your inbox!',
-        // Return token in dev mode for testing
-        ...(process.env.NODE_ENV === 'development' && { 
-          accessToken,
-          accessUrl: `${process.env.WEB_URL || 'http://localhost:3000'}/?jobId=${input.jobId}&token=${accessToken}`
+        message: 'Verification code sent to your email',
+        // Return code in dev mode for testing
+        ...(process.env.NODE_ENV === 'development' && { code })
+      };
+    }),
+
+  // Verify code and unlock report
+  verifyCode: publicProcedure
+    .input(z.object({ 
+      jobId: z.string().uuid(),
+      email: z.string().email(),
+      code: z.string().length(6),
+    }))
+    .mutation(async ({ input }) => {
+      const storedCode = await redis.get(`verify:${input.email}:${input.jobId}`);
+      
+      if (!storedCode || storedCode !== input.code) {
+        throw new Error('Invalid or expired code');
+      }
+
+      // Delete used code
+      await redis.del(`verify:${input.email}:${input.jobId}`);
+
+      // Generate access token (30 day expiry)
+      const accessToken = randomUUID();
+      await redis.setex(
+        `access:${accessToken}`,
+        2592000,
+        JSON.stringify({ 
+          jobId: input.jobId, 
+          email: input.email,
+          createdAt: Date.now() 
         })
+      );
+
+      // Update database
+      try {
+        await db.update(emailCaptures)
+          .set({ 
+            emailDelivered: true,
+            reportAccessed: true,
+            accessedAt: new Date(),
+          })
+          .where(eq(emailCaptures.jobId, input.jobId));
+      } catch (error) {
+        console.error('Failed to update access tracking:', error);
+      }
+
+      // Return full report
+      const reportData = await redis.get(`report:${input.jobId}`);
+      if (!reportData) {
+        throw new Error('REPORT_NOT_FOUND');
+      }
+
+      const report = process.env.REDIS_URL ? JSON.parse(reportData) : reportData;
+
+      return { 
+        success: true,
+        accessToken,
+        report,
+      };
+    }),
+
+  // Resend verification code
+  resendCode: publicProcedure
+    .input(z.object({ 
+      jobId: z.string().uuid(),
+      email: z.string().email(),
+    }))
+    .mutation(async ({ input }) => {
+      const reportData = await redis.get(`report:${input.jobId}`);
+      if (!reportData) {
+        throw new Error('REPORT_NOT_FOUND');
+      }
+
+      const report = process.env.REDIS_URL ? JSON.parse(reportData) : reportData;
+      
+      // Generate new code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      await redis.setex(`verify:${input.email}:${input.jobId}`, 300, code);
+
+      // Resend email
+      const { sendVerificationEmail } = await import('../lib/email');
+      await sendVerificationEmail({
+        email: input.email,
+        code,
+        url: report.url,
+      });
+
+      return { 
+        success: true,
+        message: 'New verification code sent',
+        ...(process.env.NODE_ENV === 'development' && { code })
       };
     }),
 

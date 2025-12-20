@@ -31,6 +31,129 @@ interface AccessEmailData {
   criticalCount: number;
 }
 
+interface VerificationEmailData {
+  email: string;
+  name?: string;
+  code: string;
+  url: string;
+}
+
+export async function sendVerificationEmail(data: VerificationEmailData): Promise<void> {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Verification Code</title>
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #1f2937;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f9fafb;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: #dc2626;
+      margin-bottom: 8px;
+    }
+    .code-box {
+      background: #fef3c7;
+      border: 3px solid #f59e0b;
+      padding: 24px;
+      margin: 24px 0;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .code {
+      font-size: 48px;
+      font-weight: bold;
+      letter-spacing: 8px;
+      color: #dc2626;
+      font-family: 'Courier New', monospace;
+    }
+    .footer {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #e5e7eb;
+      text-align: center;
+      font-size: 14px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">🔒 VibeCode Security Audit</div>
+      <p style="margin: 0; color: #6b7280;">Your verification code</p>
+    </div>
+
+    <h2>${data.name ? `Hi ${data.name},` : 'Hello,'}</h2>
+    <p>Your security scan for <strong>${data.url}</strong> is complete!</p>
+
+    <p>Enter this code to view your full report:</p>
+
+    <div class="code-box">
+      <div class="code">${data.code}</div>
+    </div>
+
+    <p style="text-align: center; color: #6b7280; font-size: 14px;">
+      This code expires in 5 minutes
+    </p>
+
+    <p style="margin-top: 24px;">
+      Return to your browser and enter this code to unlock:
+    </p>
+    <ul>
+      <li>Complete vulnerability details with evidence</li>
+      <li>Step-by-step remediation instructions</li>
+      <li>Vibe-coding specific security issues</li>
+      <li>Deep security analysis & recommendations</li>
+    </ul>
+
+    <div class="footer">
+      <p>
+        <strong>VibeCode Security Audit</strong><br>
+        Professional security scanning for AI-built applications
+      </p>
+      <p style="font-size: 12px; margin-top: 16px;">
+        If you didn't request this scan, you can safely ignore this email.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  await getResend().emails.send({
+    from: FROM_EMAIL,
+    to: data.email,
+    replyTo: process.env.EMAIL_REPLY_TO || FROM_EMAIL,
+    subject: `Your verification code: ${data.code}`,
+    html,
+    headers: {
+      'X-Priority': '1',
+      'X-MSMail-Priority': 'High',
+    },
+  });
+}
+
 export async function sendAccessEmail(data: AccessEmailData): Promise<void> {
   const accessUrl = `${WEB_URL}/?jobId=${data.jobId}&token=${data.accessToken}`;
   

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "predev": "./fix-permissions.sh",
-    "dev": "next dev --hostname 127.0.0.1 --port 3000",
+    "dev": "next dev --port 3000",
     "dev:alt": "PORT=3001 HOSTNAME=127.0.0.1 next dev",
     "build": "next build",
     "start": "next start"

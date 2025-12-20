@@ -132,28 +132,55 @@ export function createWorker(queueName: string = 'scan-queue') {
       }
 
       try {
-        await updateJobStatus(jobId, 'scanning');
+        // Stage 1: Crawling
+        await updateJobStatus(jobId, 'scanning', { 
+          progress: 5, 
+          currentStage: 'Crawling', 
+          stageMessage: 'Fetching target URL...' 
+        });
 
         const crawlResult = await crawlUrl(url, eventBus, jobId);
+        
+        await updateJobStatus(jobId, 'scanning', { 
+          progress: 15, 
+          currentStage: 'Crawling', 
+          stageMessage: 'Extracting page data...' 
+        });
+        
         const securityData = await extractSecurityData(crawlResult, eventBus, jobId);
+        
+        await updateJobStatus(jobId, 'scanning', { 
+          progress: 25, 
+          currentStage: 'Crawling', 
+          stageMessage: 'Discovering protected routes...' 
+        });
+        
         const postAuthData = await discoverPostAuth(url, securityData, crawlResult.html, eventBus, jobId);
+        
+        await updateJobStatus(jobId, 'scanning', { 
+          progress: 30, 
+          currentStage: 'Analyzing', 
+          stageMessage: 'SEO & meta analysis...' 
+        });
+        
         const seoData = await analyzeSEO(crawlResult, eventBus, jobId);
         
-        // Copy analysis
-        await eventBus.publish(jobId, {
-          type: 'agent.progress',
-          agent: 'copy-analyzer',
-          jobId,
-          timestamp: Date.now(),
-          progress: 50,
-          message: 'Analyzing copy',
+        // Stage 2: Analysis
+        await updateJobStatus(jobId, 'scanning', { 
+          progress: 35, 
+          currentStage: 'Analyzing', 
+          stageMessage: 'Analyzing copy & content...' 
         });
         const copyAnalysis = await copyAnalyzer.analyzeCopy(crawlResult.html, url);
 
         // If credentials provided, perform authenticated scan
         let authenticatedScan = null;
         if (credentials && (credentials.password || credentials.username || credentials.email)) {
-          await updateJobStatus(jobId, 'authenticating');
+          await updateJobStatus(jobId, 'authenticating', { 
+            progress: 40, 
+            currentStage: 'Authenticating', 
+            stageMessage: 'Attempting authenticated scan...' 
+          });
           authenticatedScan = await performAuthenticatedScan(
             url,
             credentials,
@@ -163,18 +190,20 @@ export function createWorker(queueName: string = 'scan-queue') {
           );
         }
 
-        await updateJobStatus(jobId, 'analyzing');
+        // Stage 3: Security Scan
+        await updateJobStatus(jobId, 'analyzing', { 
+          progress: 45, 
+          currentStage: 'Security Scan', 
+          stageMessage: 'Scanning for vulnerabilities...' 
+        });
 
         const findings = await scanVulnerabilities(securityData, eventBus, jobId);
         
-        // Deep security analysis - behavioral testing & security copy analysis
-        await eventBus.publish(jobId, {
-          type: 'agent.progress',
-          agent: 'deep-security-analyzer',
-          jobId,
-          timestamp: Date.now(),
-          progress: 60,
-          message: 'Performing deep security analysis',
+        // Deep security analysis
+        await updateJobStatus(jobId, 'analyzing', { 
+          progress: 55, 
+          currentStage: 'Security Scan', 
+          stageMessage: 'Deep security analysis...' 
         });
         const deepSecurityAnalysis = await performDeepSecurityAnalysis(
           url,
@@ -185,14 +214,11 @@ export function createWorker(queueName: string = 'scan-queue') {
           credentials
         );
         
-        // Vibe-coding specific vulnerability scan
-        await eventBus.publish(jobId, {
-          type: 'agent.progress',
-          agent: 'vibe-coding-vulnerabilities',
-          jobId,
-          timestamp: Date.now(),
-          progress: 65,
-          message: 'Scanning for vibe-coding vulnerabilities',
+        // Vibe-coding vulnerability scan
+        await updateJobStatus(jobId, 'analyzing', { 
+          progress: 65, 
+          currentStage: 'Security Scan', 
+          stageMessage: 'Vibe-coding vulnerability scan...' 
         });
         const vibeCodingVulns = await scanVibeCodingVulnerabilities(
           url,
@@ -202,9 +228,20 @@ export function createWorker(queueName: string = 'scan-queue') {
           jobId
         );
         
+        // AI Analysis
+        await updateJobStatus(jobId, 'analyzing', { 
+          progress: 75, 
+          currentStage: 'Analyzing', 
+          stageMessage: 'AI analysis & scoring...' 
+        });
         const analysis = await analyzeWithAI(findings, securityData, eventBus, jobId);
 
-        await updateJobStatus(jobId, 'generating');
+        // Stage 4: Report Generation
+        await updateJobStatus(jobId, 'generating', { 
+          progress: 85, 
+          currentStage: 'Generating Report', 
+          stageMessage: 'Compiling security report...' 
+        });
 
         const { html, pdf } = await generateReport(analysis, findings, url, jobId, eventBus, vibeCodingVulns);
 
@@ -303,12 +340,16 @@ export function createWorker(queueName: string = 'scan-queue') {
         };
 
         // Generate compelling preview summary
+        await updateJobStatus(jobId, 'generating', { 
+          progress: 92, 
+          currentStage: 'Generating Report', 
+          stageMessage: 'Creating summary...' 
+        });
         try {
           const previewSummary = await generatePreviewSummary(report, eventBus, jobId);
           report.previewSummary = previewSummary;
         } catch (error) {
           console.error('[Worker] Failed to generate preview summary:', error);
-          // Continue without preview summary
         }
 
         if (process.env.REDIS_URL) {
@@ -338,6 +379,8 @@ export function createWorker(queueName: string = 'scan-queue') {
         await updateJobStatus(jobId, 'completed', {
           completedAt: Date.now(),
           progress: 100,
+          currentStage: 'Complete',
+          stageMessage: 'Scan complete!',
           reportUrl,
         });
 

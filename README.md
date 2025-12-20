@@ -127,15 +127,30 @@ pnpm db:studio
 
 **Flow:**
 1. Scan completes → User sees preview (score, issue counts, vague descriptions)
-2. User enters email → Receives secure access link via Resend
-3. User clicks link → Token verified → Full report unlocked with evidence & fixes
+2. User enters email → Receives 6-digit verification code via Resend
+3. User enters code in UI → Full report unlocked (no email link, all in-browser)
+4. Token saved for 30 days if they want to return
 
 **Endpoints:**
 - `/scan.preview` - Limited report data (no auth)
-- `/scan.requestAccess` - Generates token, sends email, saves to DB
-- `/scan.verifyAccess` - Validates token, returns full report
+- `/scan.requestAccess` - Generates code, sends email, saves lead to DB
+- `/scan.verifyCode` - Validates code, returns full report + access token
+- `/scan.resendCode` - Resends verification code
+- `/scan.verifyAccess` - Validates token from email link (legacy support)
 
-**Test email:** `npx tsx test-email.ts your@email.com`
+**Components:**
+- `EmailGate` - Email capture form
+- `VerificationGate` - 6-digit code input
+- `WarRoomTerminal` - Live scan visualization
+
+**Test:**
+```bash
+# Test verification email
+npx tsx test-email.ts your@email.com
+
+# Dev mode shows code in API response
+NODE_ENV=development npm run dev
+```
 
 **Check Status:**
 ```bash

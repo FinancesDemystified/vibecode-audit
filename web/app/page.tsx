@@ -15,6 +15,8 @@ import ScanStatus from './components/scan/ScanStatus';
 import ReportSummary from './components/report/ReportSummary';
 import FindingsList from './components/report/FindingsList';
 import EmailGate from './components/email/EmailGate';
+import VerificationGate from './components/email/VerificationGate';
+import WarRoomTerminal from './components/scan/WarRoomTerminal';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vibecode-audit-production.up.railway.app';
 
@@ -24,6 +26,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showEmailGate, setShowEmailGate] = useState(false);
+  const [showVerificationGate, setShowVerificationGate] = useState(false);
+  const [capturedEmail, setCapturedEmail] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [currentTab, setCurrentTab] = useState<'scan' | 'results' | 'details'>('scan');
@@ -99,11 +103,17 @@ export default function Home() {
     }
   };
 
-  const handleEmailUnlock = () => {
-      setUnlocked(true);
-      setShowEmailGate(false);
-      setCurrentTab('details');
-    window.history.replaceState({}, '', `/?jobId=${jobId}&token=${window.location.search.split('token=')[1]?.split('&')[0] || ''}`);
+  const handleEmailSubmit = (email: string) => {
+    setCapturedEmail(email);
+    setShowEmailGate(false);
+    setShowVerificationGate(true);
+  };
+
+  const handleVerified = (accessToken: string) => {
+    setUnlocked(true);
+    setShowVerificationGate(false);
+    setCurrentTab('details');
+    window.history.replaceState({}, '', `/?jobId=${jobId}&token=${accessToken}`);
   };
 
   const handleEmailSent = () => {
@@ -216,7 +226,8 @@ export default function Home() {
             )}
 
             {loading && (
-              <ScanStatus 
+              <WarRoomTerminal 
+                jobId={jobId}
                 status={status}
                 progress={progress}
                 currentStage={currentStage}
@@ -344,24 +355,23 @@ export default function Home() {
                   )}
                 </div>
 
-                {!emailSent && jobId && (
+                {showEmailGate && !showVerificationGate && jobId && (
                   <EmailGate
                     jobId={jobId}
                     url={preview?.url || url}
                     issuesFound={preview.findingsSummary?.total || 0}
-                    onUnlock={handleEmailUnlock}
+                    onUnlock={(email) => handleEmailSubmit(email)}
                     onEmailSent={handleEmailSent}
                   />
                 )}
 
-                {emailSent && (
-                  <div className="bg-green-50 border-2 border-green-500 rounded-xl p-6 text-center">
-                    <div className="text-4xl mb-3">✅</div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Check Your Email!</h3>
-                    <p className="text-gray-700">
-                      We've sent a secure access link. Click the link in your email to view your full security report.
-                    </p>
-                  </div>
+                {showVerificationGate && capturedEmail && jobId && (
+                  <VerificationGate
+                    jobId={jobId}
+                    email={capturedEmail}
+                    url={preview?.url || url}
+                    onVerified={handleVerified}
+                  />
                 )}
               </>
             )}

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeCode War Room - Implementation Mockup</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f3f4f6;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .mockup-container { max-width: 1200px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 40px; color: #1f2937; }
+    .stage { 
+      background: white; 
+      border-radius: 12px; 
+      padding: 24px; 
+      margin-bottom: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .stage-title { 
+      font-size: 20px; 
+      font-weight: bold; 
+      margin-bottom: 16px;
+      color: #dc2626;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .terminal { 
+      background: #1a1a1a; 
+      color: #22c55e; 
+      padding: 16px; 
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+    }
+    .terminal-header {
+      background: linear-gradient(to right, #dc2626, #f97316);
+      padding: 12px 16px;
+      border-radius: 8px 8px 0 0;
+      color: white;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+    }
+    .terminal-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .dot.red { background: #ef4444; }
+    .dot.yellow { background: #eab308; }
+    .dot.green { background: #22c55e; }
+    .terminal-line { margin: 4px 0; }
+    .timestamp { color: #6b7280; }
+    .agent { color: #60a5fa; }
+    .critical { color: #ef4444; font-weight: bold; }
+    .medium { color: #eab308; }
+    .code-input {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 24px 0;
+    }
+    .code-digit {
+      width: 60px;
+      height: 80px;
+      border: 3px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 32px;
+      font-weight: bold;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+    }
+    .preview-card {
+      background: #fef3c7;
+      border: 2px solid #f59e0b;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 16px 0;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .stat {
+      background: white;
+      padding: 16px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-num { font-size: 36px; font-weight: bold; color: #dc2626; }
+    .stat-label { font-size: 12px; color: #6b7280; margin-top: 4px; }
+    .form-group { margin: 12px 0; }
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 16px;
+    }
+    .btn {
+      width: 100%;
+      padding: 16px;
+      background: #dc2626;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .flow-arrow {
+      text-align: center;
+      font-size: 32px;
+      color: #dc2626;
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="mockup-container">
+    <h1>🎯 VibeCode War Room Implementation</h1>
+
+    <!-- STAGE 1: Landing -->
+    <div class="stage">
+      <div class="stage-title">
+        <span>1️⃣</span>
+        <span>LANDING PAGE (Lead Capture)</span>
+      </div>
+      <div style="text-align: center; padding: 40px;">
+        <h2 style="font-size: 32px; margin-bottom: 16px;">Your app works. But is it actually ready to launch?</h2>
+        <p style="color: #6b7280; margin-bottom: 32px;">Built with AI? Check for security problems before launch.</p>
+        <div style="max-width: 500px; margin: 0 auto;">
+          <input type="text" placeholder="https://yourapp.com" style="width: 100%; padding: 16px; border: 2px solid #d1d5db; border-radius: 12px; font-size: 16px; margin-bottom: 8px;">
+          <button class="btn">🚀 SCAN NOW</button>
+          <p style="font-size: 12px; color: #6b7280; margin-top: 8px;">Free • No credit card • Results in minutes</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-arrow">⬇</div>
+
+    <!-- STAGE 2: War Room -->
+    <div class="stage">
+      <div class="stage-title">
+        <span>2️⃣</span>
+        <span>WAR ROOM TERMINAL (Live Scan)</span>
+      </div>
+      <div class="terminal-header">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="terminal-dots">
+            <div class="dot red"></div>
+            <div class="dot yellow"></div>
+            <div class="dot green"></div>
+          </div>
+          <span>SECURITY WAR ROOM</span>
+        </div>
+        <div style="display: flex; gap: 16px; font-family: monospace;">
+          <span>● LIVE</span>
+          <span>67%</span>
+        </div>
+      </div>
+      <div class="terminal">
+        <div class="terminal-line"><span class="timestamp">[12:34:01]</span> <span class="agent">[Agent-1]</span> <span>Agent initialized</span></div>
+        <div class="terminal-line"><span class="timestamp">[12:34:02]</span> <span class="agent">[Agent-1]</span> <span>Crawling homepage...</span></div>
+        <div class="terminal-line"><span class="timestamp">[12:34:03]</span> <span class="agent">[Agent-1]</span> <span>→ Found /api</span></div>
+        <div class="terminal-line"><span class="timestamp">[12:34:04]</span> <span class="agent">[Agent-1]</span> <span>→ Found /admin</span></div>
+        <div class="terminal-line"><span class="timestamp">[12:34:05]</span> <span class="agent">[Agent-2]</span> <span>Agent spawned for /api</span></div>
+        <div class="terminal-line"><span class="timestamp">[12:34:06]</span> <span class="agent">[Agent-2]</span> <span>🔍 Testing SQL injection...</span></div>
+        <div class="terminal-line"><span class="timestamp">[12:34:07]</span> <span class="agent">[Agent-2]</span> <span class="critical">🚨 CRITICAL: SQL Injection found</span></div>
+        <div class="terminal-line"><span class="timestamp">[12:34:08]</span> <span class="agent">[Agent-3]</span> <span>Testing auth bypass...</span></div>
+        <div class="terminal-line"><span class="timestamp">[12:34:09]</span> <span class="agent">[Agent-3]</span> <span class="critical">🚨 CRITICAL: Auth bypass detected</span></div>
+        <div class="terminal-line"><span class="timestamp">[12:34:10]</span> <span class="agent">[Agent-4]</span> <span>Scanning headers...</span></div>
+        <div class="terminal-line"><span class="timestamp">[12:34:11]</span> <span class="agent">[Agent-4]</span> <span class="medium">⚠️ MEDIUM: CORS misconfiguration</span></div>
+        <div class="terminal-line" style="margin-top: 12px;"><span class="agent">></span> <span style="animation: blink 1s infinite;">_</span></div>
+      </div>
+      <div style="background: #374151; height: 6px; border-radius: 8px; margin-top: 16px; overflow: hidden;">
+        <div style="width: 67%; height: 100%; background: linear-gradient(to right, #ef4444, #f97316); transition: width 0.3s;"></div>
+      </div>
+      <p style="text-align: center; color: #6b7280; font-size: 12px; margin-top: 8px;">Testing security headers... 67% complete</p>
+    </div>
+
+    <div class="flow-arrow">⬇</div>
+
+    <!-- STAGE 3: Preview + Email Gate -->
+    <div class="stage">
+      <div class="stage-title">
+        <span>3️⃣</span>
+        <span>PREVIEW REPORT + EMAIL GATE</span>
+      </div>
+      <div class="preview-card">
+        <h3 style="font-size: 20px; margin-bottom: 12px;">🔍 Security Issues Found</h3>
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-num">2</div>
+            <div class="stat-label">Critical</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" style="color: #f97316;">4</div>
+            <div class="stat-label">High</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" style="color: #eab308;">5</div>
+            <div class="stat-label">Medium</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" style="color: #22c55e;">3</div>
+            <div class="stat-label">Low</div>
+          </div>
+        </div>
+        <p style="margin: 16px 0;">Found <strong>14 security issues</strong>, including <strong>2 critical</strong> vulnerabilities.</p>
+      </div>
+
+      <div style="background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%); border: 2px solid #f59e0b; border-radius: 16px; padding: 32px; text-align: center;">
+        <div style="width: 64px; height: 64px; background: #f59e0b; border-radius: 16px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 32px;">🔒</div>
+        <h3 style="font-size: 24px; margin-bottom: 8px;">Get Your Full Security Report</h3>
+        <p style="color: #6b7280; margin-bottom: 24px;">We'll send you a verification code to unlock the report.</p>
+        <div style="max-width: 400px; margin: 0 auto;">
+          <div class="form-group">
+            <input type="email" placeholder="Email *" required>
+          </div>
+          <div class="form-group">
+            <input type="text" placeholder="Name (optional)">
+          </div>
+          <div class="form-group">
+            <input type="tel" placeholder="Phone (optional)">
+          </div>
+          <button class="btn">Get Full Report →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-arrow">⬇</div>
+
+    <!-- STAGE 4: Verification Gate -->
+    <div class="stage">
+      <div class="stage-title">
+        <span>4️⃣</span>
+        <span>VERIFICATION GATE</span>
+      </div>
+      <div style="background: linear-gradient(135deg, #fee2e2 0%, #fed7aa 100%); border: 2px solid #dc2626; border-radius: 16px; padding: 40px; text-align: center;">
+        <div style="font-size: 64px; margin-bottom: 16px;">🔒</div>
+        <h3 style="font-size: 28px; margin-bottom: 8px;">Verify Your Email</h3>
+        <p style="color: #6b7280; margin-bottom: 32px;">We sent a 6-digit code to <strong>user@example.com</strong></p>
+        
+        <div class="code-input">
+          <input type="text" class="code-digit" maxlength="1" value="3">
+          <input type="text" class="code-digit" maxlength="1" value="8">
+          <input type="text" class="code-digit" maxlength="1" value="5">
+          <input type="text" class="code-digit" maxlength="1" value="2">
+          <input type="text" class="code-digit" maxlength="1" value="">
+          <input type="text" class="code-digit" maxlength="1" value="">
+        </div>
+
+        <p style="font-size: 14px; color: #6b7280; margin-bottom: 16px;">Code expires in 5 minutes</p>
+        
+        <div style="display: flex; gap: 24px; justify-content: center; font-size: 14px;">
+          <a href="#" style="color: #dc2626; font-weight: 600; text-decoration: none;">Resend Code</a>
+          <span style="color: #d1d5db;">•</span>
+          <a href="#" style="color: #6b7280; font-weight: 600; text-decoration: none;">Change Email</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-arrow">⬇</div>
+
+    <!-- STAGE 5: Full Report -->
+    <div class="stage">
+      <div class="stage-title">
+        <span>5️⃣</span>
+        <span>FULL REPORT UNLOCKED ✓</span>
+      </div>
+      <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 12px; padding: 24px;">
+        <h3 style="color: #15803d; font-size: 24px; margin-bottom: 16px;">🛡️ Deep Security Analysis</h3>
+        <div style="background: white; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+          <h4 style="color: #dc2626; margin-bottom: 12px;">🚨 SQL Injection (CRITICAL)</h4>
+          <p style="margin-bottom: 8px;"><strong>Location:</strong> /api/users?id=</p>
+          <p style="margin-bottom: 8px;"><strong>Evidence:</strong> <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px;">GET /api/users?id=1' OR 1=1--</code></p>
+          <p style="margin-bottom: 8px;"><strong>Impact:</strong> Full database access, data theft possible</p>
+          <p><strong>Fix:</strong> Use parameterized queries, implement input validation</p>
+        </div>
+        <div style="background: white; border-radius: 8px; padding: 20px;">
+          <h4 style="color: #dc2626; margin-bottom: 12px;">🚨 Authentication Bypass (CRITICAL)</h4>
+          <p style="margin-bottom: 8px;"><strong>Location:</strong> /admin</p>
+          <p style="margin-bottom: 8px;"><strong>Evidence:</strong> Cookie manipulation bypasses auth</p>
+          <p style="margin-bottom: 8px;"><strong>Impact:</strong> Unauthorized admin access</p>
+          <p><strong>Fix:</strong> Implement server-side session validation</p>
+        </div>
+        <button class="btn" style="margin-top: 24px; background: #22c55e;">Download Full Report (PDF)</button>
+      </div>
+    </div>
+
+    <div style="margin-top: 48px; padding: 24px; background: #1f2937; color: white; border-radius: 12px; text-align: center;">
+      <h2 style="margin-bottom: 16px;">🎯 Lead Capture Summary</h2>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 800px; margin: 0 auto;">
+        <div>
+          <div style="font-size: 32px; font-weight: bold; color: #22c55e;">✓</div>
+          <p>Email Captured</p>
+          <small style="color: #9ca3af;">(Stage 3)</small>
+        </div>
+        <div>
+          <div style="font-size: 32px; font-weight: bold; color: #22c55e;">✓</div>
+          <p>Email Verified</p>
+          <small style="color: #9ca3af;">(Stage 4)</small>
+        </div>
+        <div>
+          <div style="font-size: 32px; font-weight: bold; color: #22c55e;">✓</div>
+          <p>Report Accessed</p>
+          <small style="color: #9ca3af;">(Stage 5)</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
